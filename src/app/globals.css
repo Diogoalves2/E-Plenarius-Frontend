@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #F6F7F9;
+    --bg-raised: #FFFFFF;
+    --bg-sunk: #EFF1F4;
+    --panel: #FFFFFF;
+    --border: rgba(15,23,42,0.08);
+    --text: #0B1220;
+    --text-mute: #4B5563;
+    --text-faint: #8A94A2;
+    --primary: oklch(0.52 0.16 255);
+    --sim: oklch(0.50 0.15 155);
+    --nao: oklch(0.52 0.20 25);
+    --abs: oklch(0.60 0.02 250);
+  }
+
+  .dark {
+    --bg: #0B0D10;
+    --bg-raised: #111418;
+    --bg-sunk: #07090B;
+    --panel: #15191F;
+    --border: rgba(255,255,255,0.08);
+    --text: #E9EDF2;
+    --text-mute: #9AA3AE;
+    --text-faint: #5B636D;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .font-tight { font-family: 'Inter Tight', system-ui, sans-serif; }
+  .font-mono-jet { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128,128,128,0.3) transparent;
+  }
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+.animate-pulse-dot { animation: pulseDot 1.6s infinite; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%       { transform: translateX(-6px); }
+  30%       { transform: translateX(6px); }
+  45%       { transform: translateX(-4px); }
+  60%       { transform: translateX(4px); }
+  75%       { transform: translateX(-2px); }
+  90%       { transform: translateX(2px); }
+}
+.animate-shake { animation: shake 0.5s ease; }
