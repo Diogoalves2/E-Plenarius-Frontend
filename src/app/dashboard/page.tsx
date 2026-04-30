@@ -59,7 +59,7 @@ export default function VotacaoAoVivoPage() {
         .catch(() => {});
     };
     socket.on('quorum:updated', handler);
-    return () => socket.off('quorum:updated', handler);
+    return () => { socket.off('quorum:updated', handler); };
   }, [socket, sessionId]);
 
   useEffect(() => {

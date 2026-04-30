@@ -62,7 +62,7 @@ export default function TelaoPage() {
       setTimeout(() => setResultVisible(false), 8000);
     };
     socket.on('voting:closed', onClosed);
-    return () => socket.off('voting:closed', onClosed);
+    return () => { socket.off('voting:closed', onClosed); };
   }, [socket]);
 
   // Mapa userId → choice, derivado do voteLog
@@ -117,7 +117,7 @@ export default function TelaoPage() {
       fetchSessionInfo();
     };
     socket.on('connect', onConnect);
-    return () => socket.off('connect', onConnect);
+    return () => { socket.off('connect', onConnect); };
   }, [socket, fetchQuorum, fetchSessionInfo]);
 
   // Refresh sessionInfo every 30s (YouTube URL/thumbnail changes)
@@ -149,7 +149,7 @@ export default function TelaoPage() {
       fetchQuorum();
     };
     socket.on('quorum:updated', onQuorumUpdated);
-    return () => socket.off('quorum:updated', onQuorumUpdated);
+    return () => { socket.off('quorum:updated', onQuorumUpdated); };
   }, [socket, fetchQuorum]);
 
   useEffect(() => {
