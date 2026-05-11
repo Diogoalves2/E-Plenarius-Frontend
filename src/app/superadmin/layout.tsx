@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Building2, Settings, LogOut, LayoutDashboard } from 'lucide-react';
+
+const SYSTEM_LOGO_KEY = 'system_logo_url';
 
 const NAV = [
   { label: 'Visão Geral',    href: '/superadmin',              icon: LayoutDashboard, exact: true },
@@ -22,11 +24,19 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [systemLogo, setSystemLogo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
     if (!loading && user && user.role !== 'superadmin') router.push('/dashboard');
   }, [user, loading, router]);
+
+  useEffect(() => {
+    const update = () => setSystemLogo(localStorage.getItem(SYSTEM_LOGO_KEY));
+    update();
+    window.addEventListener('system-logo-changed', update);
+    return () => window.removeEventListener('system-logo-changed', update);
+  }, []);
 
   if (loading || !user) {
     return (
@@ -45,13 +55,12 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
       {/* Sidebar */}
       <aside className="w-56 flex-shrink-0 flex flex-col h-full" style={{ background: SIDEBAR_BG }}>
         {/* Logo */}
-        <div className="h-14 flex items-center gap-2.5 px-5 flex-shrink-0"
-             style={{ borderBottom: 'rgba(255,255,255,0.08) 1px solid' }}>
-          <Brasao size={26} color="#63A0FF" />
-          <div>
-            <div className="font-tight font-semibold text-sm leading-none text-white">E-Plenarius</div>
-            <div className="font-mono-jet text-[10px] font-semibold mt-0.5" style={{ color: '#63A0FF' }}>SUPERADMIN</div>
-          </div>
+        <div className="flex-shrink-0 flex flex-col gap-1"
+             style={{ padding: '10px 12px 8px', borderBottom: 'rgba(255,255,255,0.08) 1px solid' }}>
+          {systemLogo
+            ? <img src={systemLogo} alt="Logo" style={{ width: '100%', maxHeight: 36, objectFit: 'contain' }} />
+            : <Brasao size={36} color="#63A0FF" />}
+          <div className="font-mono-jet text-[9px] font-bold text-right" style={{ color: '#63A0FF', letterSpacing: '0.2em' }}>SUPERADMIN</div>
         </div>
 
         {/* Nav */}

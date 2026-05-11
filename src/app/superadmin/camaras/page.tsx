@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { Plus, Building2, MapPin, X, Copy, Check, Loader2, Eye, EyeOff, ImagePlus, Trash2, KeyRound, Pencil, Users } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 
 interface Chamber {
@@ -28,14 +29,22 @@ interface Credentials {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const BLUE = '#1447E6';
 
 export default function CamarasPage() {
+  return <Suspense><CamarasPageInner /></Suspense>;
+}
+
+function CamarasPageInner() {
   const [chambers, setChambers] = useState<Chamber[]>([]);
   const [loadingChambers, setLoadingChambers] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<Chamber | null>(null);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const fetchChambers = useCallback(async () => {
     try {
@@ -47,6 +56,13 @@ export default function CamarasPage() {
   }, []);
 
   useEffect(() => { fetchChambers(); }, [fetchChambers]);
+
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setShowModal(true);
+      router.replace('/superadmin/camaras');
+    }
+  }, [searchParams, router]);
 
   function handleCreated(creds: Credentials) {
     setShowModal(false);
@@ -66,20 +82,20 @@ export default function CamarasPage() {
   }
 
   return (
-    <div className="p-8">
+    <div style={{ background: '#F5F6F8', minHeight: '100%', padding: '32px 36px 64px' }}>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="font-tight font-semibold text-2xl" style={{ color: '#0B1220', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0D1117', letterSpacing: '-0.03em', margin: 0, fontFamily: '"Inter Tight","Inter",sans-serif' }}>
             Câmaras Municipais
           </h2>
-          <p className="text-sm mt-1" style={{ color: '#8A94A2' }}>
+          <p style={{ fontSize: 13, color: '#8A94A2', marginTop: 3, letterSpacing: '-0.01em' }}>
             {chambers.length} câmara{chambers.length !== 1 ? 's' : ''} cadastrada{chambers.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm text-white transition-opacity hover:opacity-90"
-          style={{ background: 'oklch(0.52 0.16 255)' }}>
+          className="flex items-center gap-2 px-4 py-2.5 font-semibold text-sm text-white transition-opacity hover:opacity-90"
+          style={{ background: '#1447E6', borderRadius: 8 }}>
           <Plus size={16} />
           Nova Câmara
         </button>
@@ -98,45 +114,56 @@ export default function CamarasPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {chambers.map((c) => (
-            <div key={c.id} className="bg-white rounded-xl p-5"
-                 style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
+            <div key={c.id} className="bg-white p-5"
+                 style={{ border: '1px solid #E4E7ED', borderRadius: 10 }}>
               <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
-                     style={{ background: 'rgba(82,130,255,0.1)' }}>
+                <div className="flex items-center justify-center flex-shrink-0 overflow-hidden"
+                     style={{ width: 48, height: 48, borderRadius: 8, background: '#F0F4FF', border: '1px solid #DBEAFE' }}>
                   {c.logoUrl
                     ? <img src={`${API_BASE}${c.logoUrl}`} alt={c.name} className="w-full h-full object-contain p-1" />
-                    : <Building2 size={18} style={{ color: 'oklch(0.52 0.16 255)' }} />}
+                    : <Building2 size={20} style={{ color: '#1447E6' }} />}
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded font-mono-jet font-semibold"
-                      style={{ background: c.isActive ? 'rgba(16,185,129,0.1)' : 'rgba(15,23,42,0.06)', color: c.isActive ? '#059669' : '#8A94A2' }}>
-                  {c.isActive ? 'ATIVA' : 'INATIVA'}
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  fontSize: 11, fontWeight: 600,
+                  padding: '3px 9px', borderRadius: 6,
+                  background: c.isActive ? '#ECFDF5' : '#F5F6F8',
+                  color: c.isActive ? '#059669' : '#8A94A2',
+                  border: `1px solid ${c.isActive ? '#A7F3D0' : '#E4E7ED'}`,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.isActive ? '#059669' : '#CBD5E1', flexShrink: 0 }} />
+                  {c.isActive ? 'Ativa' : 'Inativa'}
                 </span>
               </div>
-              <h3 className="font-semibold text-sm leading-snug mb-1" style={{ color: '#0B1220' }}>{c.name}</h3>
+              <h3 className="font-semibold text-sm leading-snug mb-1" style={{ color: '#0D1117', letterSpacing: '-0.01em' }}>{c.name}</h3>
               <div className="flex items-center gap-1 text-xs" style={{ color: '#8A94A2' }}>
                 <MapPin size={11} />
                 {c.city} — {c.state}
               </div>
-              <div className="mt-3 pt-3 flex items-center justify-between gap-2" style={{ borderTop: '1px solid rgba(15,23,42,0.06)' }}>
-                <span className="font-mono-jet text-xs truncate" style={{ color: '#8A94A2' }}>{c.slug}</span>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Link href={`/superadmin/camaras/${c.id}/vereadores`} title="Gerenciar vereadores"
-                        className="p-1.5 rounded-lg transition-colors inline-flex" style={{ color: '#8A94A2' }}
-                        onMouseEnter={(e: any) => { e.currentTarget.style.background = 'rgba(82,130,255,0.08)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; }}
-                        onMouseLeave={(e: any) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}>
-                    <Users size={13} />
+              <div className="mt-3 pt-3 flex flex-col gap-2" style={{ borderTop: '1px solid #F0F2F5' }}>
+                <span className="font-mono-jet text-xs truncate" style={{ color: '#B0B8C4' }}>{c.slug}</span>
+                <div className="flex items-center gap-1.5">
+                  <Link href={`/superadmin/camaras/${c.id}/vereadores`}
+                        className="flex items-center justify-center gap-1.5 text-xs font-semibold rounded-lg transition-colors"
+                        style={{ flex: 1, padding: '7px 0', color: '#8A94A2', background: '#F5F6F8' }}
+                        onMouseEnter={(e: any) => { e.currentTarget.style.background = 'rgba(20,71,230,0.08)'; e.currentTarget.style.color = '#1447E6'; }}
+                        onMouseLeave={(e: any) => { e.currentTarget.style.background = '#F5F6F8'; e.currentTarget.style.color = '#8A94A2'; }}>
+                    <Users size={13} /> Vereadores
                   </Link>
-                  <button onClick={() => setEditTarget(c)} title="Editar câmara"
-                          className="p-1.5 rounded-lg transition-colors" style={{ color: '#8A94A2' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(82,130,255,0.08)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}>
-                    <Pencil size={13} />
+                  <button onClick={() => setEditTarget(c)}
+                          className="flex items-center justify-center gap-1.5 text-xs font-semibold rounded-lg transition-colors"
+                          style={{ flex: '0 0 auto', padding: '7px 12px', color: '#8A94A2', background: '#F5F6F8' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(20,71,230,0.08)'; e.currentTarget.style.color = '#1447E6'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#F5F6F8'; e.currentTarget.style.color = '#8A94A2'; }}>
+                    <Pencil size={13} /> Editar
                   </button>
-                  <button onClick={() => resetCredentials(c)} disabled={resetting === c.id} title="Redefinir senha do presidente"
-                          className="p-1.5 rounded-lg transition-colors" style={{ color: '#8A94A2' }}
+                  <button onClick={() => resetCredentials(c)} disabled={resetting === c.id}
+                          className="flex items-center justify-center gap-1.5 text-xs font-semibold rounded-lg transition-colors"
+                          style={{ flex: 1.4, padding: '7px 0', color: '#8A94A2', background: '#F5F6F8', whiteSpace: 'nowrap' }}
                           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(234,179,8,0.08)'; e.currentTarget.style.color = '#b45309'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}>
+                          onMouseLeave={e => { e.currentTarget.style.background = '#F5F6F8'; e.currentTarget.style.color = '#8A94A2'; }}>
                     {resetting === c.id ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
+                    {resetting === c.id ? 'Resetando…' : 'Resetar Senha'}
                   </button>
                 </div>
               </div>
@@ -245,7 +272,7 @@ function NewChamberModal({ onClose, onCreated }: { onClose: () => void; onCreate
               <button type="button" onClick={() => fileInputRef.current?.click()}
                       className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm transition-all"
                       style={{ border: '2px dashed rgba(15,23,42,0.12)', color: '#8A94A2' }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'oklch(0.52 0.16 255)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#1447E6'; e.currentTarget.style.color = '#1447E6'; e.currentTarget.style.background = 'rgba(20,71,230,0.04)'; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(15,23,42,0.12)'; e.currentTarget.style.color = '#8A94A2'; e.currentTarget.style.background = 'transparent'; }}>
                 <ImagePlus size={16} />
                 Clique para enviar a logomarca
@@ -315,7 +342,7 @@ function NewChamberModal({ onClose, onCreated }: { onClose: () => void; onCreate
             </button>
             <button type="submit" disabled={loading}
                     className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2"
-                    style={{ background: 'oklch(0.52 0.16 255)', opacity: loading ? 0.7 : 1 }}>
+                    style={{ background: '#1447E6', opacity: loading ? 0.7 : 1 }}>
               {loading && <Loader2 size={14} className="animate-spin" />}
               {loading ? 'Criando…' : 'Criar Câmara'}
             </button>
@@ -491,7 +518,7 @@ function EditChamberModal({ chamber, onClose, onSaved }: { chamber: Chamber; onC
 
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>Cancelar</button>
-            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: 'oklch(0.52 0.16 255)', opacity: loading ? 0.7 : 1 }}>
+            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: '#1447E6', opacity: loading ? 0.7 : 1 }}>
               {loading && <Loader2 size={14} className="animate-spin" />}{loading ? 'Salvando…' : 'Salvar'}
             </button>
           </div>
@@ -569,7 +596,7 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
         <div className="px-6 pb-6">
           <button onClick={onClose}
                   className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ background: 'oklch(0.52 0.16 255)' }}>
+                  style={{ background: '#1447E6' }}>
             Concluir
           </button>
         </div>
@@ -580,7 +607,7 @@ function CredentialsModal({ credentials, onClose }: { credentials: Credentials; 
 
 /* ── Shared helpers ────────────────────────────────────────── */
 
-const iStyle: React.CSSProperties = { background: 'white', border: '1px solid rgba(15,23,42,0.12)', color: '#0B1220', transition: 'border-color 0.15s' };
+const iStyle: React.CSSProperties = { background: 'white', border: '1px solid #E4E7ED', color: '#0D1117', transition: 'border-color 0.15s' };
 
 function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -588,8 +615,8 @@ function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInput
       {...props}
       className={`w-full px-3.5 py-2.5 rounded-lg text-sm outline-none ${className}`}
       style={iStyle}
-      onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')}
-      onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')}
+      onFocus={e => (e.target.style.borderColor = '#1447E6')}
+      onBlur={e => (e.target.style.borderColor = '#E4E7ED')}
     />
   );
 }
@@ -638,7 +665,7 @@ function ImageUploadField({
       <button type="button" onClick={() => inputRef.current?.click()}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm transition-all"
               style={{ border: '2px dashed rgba(15,23,42,0.12)', color: '#8A94A2' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'oklch(0.52 0.16 255)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#1447E6'; e.currentTarget.style.color = '#1447E6'; e.currentTarget.style.background = 'rgba(20,71,230,0.04)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(15,23,42,0.12)'; e.currentTarget.style.color = '#8A94A2'; e.currentTarget.style.background = 'transparent'; }}>
         <ImagePlus size={16} />
         {placeholder}

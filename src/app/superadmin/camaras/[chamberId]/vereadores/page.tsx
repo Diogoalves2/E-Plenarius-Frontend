@@ -73,7 +73,7 @@ export default function VereadoresPage() {
         </div>
         <button onClick={() => setShowModal(true)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm text-white"
-                style={{ background: 'oklch(0.52 0.16 255)' }}>
+                style={{ background: '#1447E6' }}>
           <Plus size={16} /> Novo Membro
         </button>
       </div>
@@ -95,7 +95,7 @@ export default function VereadoresPage() {
                 </p>
               </div>
               <span className="text-[10px] font-mono-jet font-semibold px-2 py-0.5 rounded"
-                    style={{ background: 'rgba(82,130,255,0.1)', color: 'oklch(0.52 0.16 255)' }}>
+                    style={{ background: '#F0F4FF', color: '#1447E6' }}>
                 {ROLES.find(r => r.value === v.role)?.label ?? v.role}
               </span>
               <span className="text-[10px] font-mono-jet font-semibold px-2 py-0.5 rounded"
@@ -105,7 +105,7 @@ export default function VereadoresPage() {
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button onClick={() => setEditTarget(v)} title="Editar"
                         className="p-1.5 rounded-lg transition-colors" style={{ color: '#8A94A2' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(82,130,255,0.08)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(20,71,230,0.08)'; e.currentTarget.style.color = '#1447E6'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}>
                   <Pencil size={13} />
                 </button>
@@ -156,7 +156,7 @@ function Avatar({ v }: { v: Vereador }) {
   );
   return (
     <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white"
-         style={{ background: 'oklch(0.52 0.16 255)' }}>
+         style={{ background: '#1447E6' }}>
       {v.initials}
     </div>
   );
@@ -269,7 +269,7 @@ function VereadorModal({
               <button type="button" onClick={() => fileRef.current?.click()}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all"
                       style={{ border: '2px dashed rgba(15,23,42,0.12)', color: '#8A94A2' }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'oklch(0.52 0.16 255)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#1447E6'; e.currentTarget.style.color = '#1447E6'; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(15,23,42,0.12)'; e.currentTarget.style.color = '#8A94A2'; }}>
                 <ImagePlus size={16} /> Clique para enviar foto
               </button>
@@ -333,7 +333,7 @@ function VereadorModal({
             </button>
             <button type="submit" disabled={loading}
                     className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2"
-                    style={{ background: 'oklch(0.52 0.16 255)', opacity: loading ? 0.7 : 1 }}>
+                    style={{ background: '#1447E6', opacity: loading ? 0.7 : 1 }}>
               {loading && <Loader2 size={14} className="animate-spin" />}
               {loading ? 'Salvando…' : isEdit ? 'Salvar' : 'Criar'}
             </button>
@@ -348,7 +348,7 @@ const iStyle: React.CSSProperties = { background: 'white', border: '1px solid rg
 function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input {...props} className={`w-full px-3.5 py-2.5 rounded-lg text-sm outline-none ${className}`} style={iStyle}
-           onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')}
+           onFocus={e => (e.target.style.borderColor = '#1447E6')}
            onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')} />
   );
 }

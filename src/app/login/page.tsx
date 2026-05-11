@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, AlertTriangle } from 'lucide-react';
+
+const SYSTEM_LOGO_KEY = 'system_logo_url';
 
 function resolveErrorMessage(err: any): { title: string; detail: string } {
   const status = err?.response?.status;
@@ -26,6 +28,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ title: string; detail: string } | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
+  const [systemLogo, setSystemLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const logo = localStorage.getItem(SYSTEM_LOGO_KEY);
+    if (logo) setSystemLogo(logo);
+  }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +55,9 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-col justify-between w-[480px] flex-shrink-0 p-12"
            style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-center gap-3">
-          <Brasao size={36} color="oklch(0.52 0.16 255)" />
+          {systemLogo
+            ? <img src={systemLogo} alt="Logo" style={{ width: 36, height: 36, objectFit: 'contain', flexShrink: 0 }} />
+            : <Brasao size={36} color="#1447E6" />}
           <span className="font-tight font-semibold text-white text-lg tracking-tight">
             E-Plenarius
           </span>
@@ -61,7 +71,7 @@ export default function LoginPage() {
           <h1 className="font-tight font-semibold text-white leading-tight"
               style={{ fontSize: 42, letterSpacing: '-0.03em', lineHeight: 1.08 }}>
             Votação em<br />tempo real,<br />com{' '}
-            <span style={{ color: 'oklch(0.52 0.16 255)' }}>auditoria<br />imutável.</span>
+            <span style={{ color: '#1447E6' }}>auditoria<br />imutável.</span>
           </h1>
           <p className="mt-5 text-sm leading-relaxed" style={{ color: '#9AA3AE' }}>
             Plataforma multi-câmara com WebSocket para sessões ao vivo,
@@ -76,7 +86,7 @@ export default function LoginPage() {
             ].map(([role, desc]) => (
               <div key={role} className="flex items-start gap-3">
                 <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                     style={{ background: 'rgba(82,130,255,0.15)', color: 'oklch(0.52 0.16 255)' }}>
+                     style={{ background: 'rgba(82,130,255,0.15)', color: '#1447E6' }}>
                   <CheckIcon />
                 </div>
                 <div>
@@ -98,7 +108,9 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-10 lg:hidden">
-            <Brasao size={28} color="oklch(0.52 0.16 255)" />
+            {systemLogo
+              ? <img src={systemLogo} alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain', flexShrink: 0 }} />
+              : <Brasao size={28} color="#1447E6" />}
             <span className="font-tight font-semibold text-white">E-Plenarius</span>
           </div>
 
@@ -131,7 +143,7 @@ export default function LoginPage() {
                   border: '1px solid rgba(255,255,255,0.08)',
                   fontFamily: 'inherit',
                 }}
-                onFocus={e => e.target.style.borderColor = 'oklch(0.52 0.16 255)'}
+                onFocus={e => e.target.style.borderColor = '#1447E6'}
                 onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
               />
             </div>
@@ -154,7 +166,7 @@ export default function LoginPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     fontFamily: 'inherit',
                   }}
-                  onFocus={e => e.target.style.borderColor = 'oklch(0.52 0.16 255)'}
+                  onFocus={e => e.target.style.borderColor = '#1447E6'}
                   onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
                 />
                 <button
@@ -183,7 +195,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-opacity"
               style={{
-                background: 'oklch(0.52 0.16 255)',
+                background: '#1447E6',
                 color: '#fff',
                 opacity: loading ? 0.7 : 1,
                 cursor: loading ? 'not-allowed' : 'pointer',

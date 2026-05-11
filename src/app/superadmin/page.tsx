@@ -44,7 +44,7 @@ export default function SuperadminOverviewPage() {
             Resumo do sistema E-Plenarius
           </p>
         </div>
-        <Link href="/superadmin/camaras" style={{
+        <Link href="/superadmin/camaras?new=1" style={{
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '9px 18px', borderRadius: 8,
           background: BLUE, color: '#fff',
