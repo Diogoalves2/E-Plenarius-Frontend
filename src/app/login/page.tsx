@@ -111,7 +111,7 @@ export default function LoginPage() {
             Entrar
           </h2>
 
-          <form key={shakeKey} onSubmit={handleSubmit} className={`flex flex-col gap-4 ${error ? 'animate-shake' : ''}`}>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold font-mono-jet tracking-wider"
                      style={{ color: '#9AA3AE', letterSpacing: '0.06em' }}>
@@ -168,7 +168,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="flex gap-3 px-4 py-3.5 rounded-xl"
+              <div key={shakeKey} className="flex gap-3 px-4 py-3.5 rounded-xl animate-shake"
                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
                 <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#f87171' }} />
                 <div>
