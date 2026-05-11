@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Building2, Plus, ArrowRight, MapPin, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, ArrowRight, MapPin, Users, Building2, Activity } from 'lucide-react';
 import api from '@/lib/api';
 
 interface Chamber {
@@ -16,190 +16,249 @@ interface Chamber {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const BLUE = '#1447E6';
 
 export default function SuperadminOverviewPage() {
   const [chambers, setChambers] = useState<Chamber[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
     api.get('/chambers').then(({ data }) => setChambers(data)).finally(() => setLoading(false));
   }, []);
 
-  const total  = chambers.length;
-  const active = chambers.filter(c => c.isActive).length;
-  const recent = chambers.slice(0, 6);
+  const total    = chambers.length;
+  const active   = chambers.filter(c => c.isActive).length;
+  const inactive = total - active;
+  const recent   = chambers.slice(0, 6);
 
   return (
-    <div className="p-8 max-w-6xl">
+    <div style={{ background: '#F5F6F8', minHeight: '100%', padding: '32px 36px 64px' }}>
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-10">
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <h2 className="font-tight font-bold text-3xl" style={{ color: '#0B1220', letterSpacing: '-0.03em' }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0D1117', letterSpacing: '-0.03em', margin: 0, fontFamily: '"Inter Tight","Inter",sans-serif' }}>
             Visão Geral
           </h2>
-          <p className="text-sm mt-1.5" style={{ color: '#8A94A2' }}>
+          <p style={{ fontSize: 13, color: '#8A94A2', marginTop: 3, letterSpacing: '-0.01em' }}>
             Resumo do sistema E-Plenarius
           </p>
         </div>
-        <Link
-          href="/superadmin/camaras"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
-          style={{ background: 'linear-gradient(135deg, oklch(0.52 0.16 255), oklch(0.45 0.18 270))', boxShadow: '0 4px 14px rgba(82,130,255,0.35)' }}
-        >
-          <Plus size={16} strokeWidth={2.5} />
+        <Link href="/superadmin/camaras" style={{
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '9px 18px', borderRadius: 8,
+          background: BLUE, color: '#fff',
+          fontWeight: 600, fontSize: 13,
+          textDecoration: 'none', letterSpacing: '-0.01em',
+        }}>
+          <Plus size={14} strokeWidth={2.5} />
           Nova Câmara
         </Link>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-5 mb-10">
+      {/* ── Stat cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
         <StatCard
           label="Total de Câmaras"
           value={loading ? '—' : String(total)}
-          color="#5282FF"
-          gradient="linear-gradient(135deg, rgba(82,130,255,0.12), rgba(82,130,255,0.04))"
-          icon={
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5282FF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 21h18M3 7l9-4 9 4M4 7v14M20 7v14M9 21V9h6v12"/>
-            </svg>
-          }
+          sub="cadastradas no sistema"
+          color={BLUE}
+          icon={<Building2 size={20} color={BLUE} strokeWidth={1.8} />}
         />
         <StatCard
           label="Câmaras Ativas"
           value={loading ? '—' : String(active)}
-          color="#10b981"
-          gradient="linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04))"
-          icon={
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-          }
+          sub={active > 0 ? 'em operação' : 'nenhuma ativa'}
+          color="#059669"
+          icon={<Activity size={20} color="#059669" strokeWidth={1.8} />}
+          dot
+        />
+        <StatCard
+          label="Câmaras Inativas"
+          value={loading ? '—' : String(inactive)}
+          sub="fora de operação"
+          color="#8A94A2"
+          icon={<Users size={20} color="#8A94A2" strokeWidth={1.8} />}
         />
       </div>
 
-      {/* Chambers grid */}
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-tight font-semibold text-lg" style={{ color: '#0B1220', letterSpacing: '-0.02em' }}>
-            Câmaras recentes
-          </h3>
-          <Link
-            href="/superadmin/camaras"
-            className="flex items-center gap-1.5 text-sm font-semibold transition-opacity hover:opacity-70"
-            style={{ color: 'oklch(0.52 0.16 255)' }}
-          >
-            Ver todas <ArrowRight size={15} />
+      {/* ── Chambers table ── */}
+      <div style={{ background: '#fff', border: '1px solid #E4E7ED', borderRadius: 10, overflow: 'hidden' }}>
+
+        {/* Table header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px', borderBottom: '1px solid #F0F2F5',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#0D1117', letterSpacing: '-0.02em', fontFamily: '"Inter Tight","Inter",sans-serif' }}>
+              Câmaras recentes
+            </span>
+            {!loading && (
+              <span style={{
+                fontSize: 11, fontWeight: 600, color: '#8A94A2',
+                background: '#F5F6F8', border: '1px solid #E4E7ED',
+                padding: '2px 8px', borderRadius: 5,
+              }}>{recent.length}</span>
+            )}
+          </div>
+          <Link href="/superadmin/camaras" style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            fontSize: 12, fontWeight: 600, color: BLUE,
+            textDecoration: 'none',
+          }}>
+            Ver todas <ArrowRight size={13} />
           </Link>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-40 rounded-2xl animate-pulse" style={{ background: 'rgba(15,23,42,0.05)' }} />
-            ))}
-          </div>
-        ) : recent.length === 0 ? (
-          <div className="rounded-2xl py-16 flex flex-col items-center gap-4 bg-white"
-               style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                 style={{ background: 'rgba(82,130,255,0.08)' }}>
-              <Building2 size={28} style={{ color: 'oklch(0.52 0.16 255)' }} />
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-sm mb-1" style={{ color: '#0B1220' }}>Nenhuma câmara cadastrada</p>
-              <p className="text-sm" style={{ color: '#8A94A2' }}>Comece criando a primeira câmara municipal</p>
-            </div>
-            <Link
-              href="/superadmin/camaras"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm text-white"
-              style={{ background: 'oklch(0.52 0.16 255)' }}
-            >
-              <Plus size={15} /> Cadastrar agora
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recent.map(c => (
-              <ChamberCard key={c.id} chamber={c} />
+        {/* Column labels */}
+        {!loading && recent.length > 0 && (
+          <div style={{
+            display: 'grid', gridTemplateColumns: '2fr 1fr 120px 100px',
+            padding: '10px 20px', borderBottom: '1px solid #F0F2F5',
+          }}>
+            {['CÂMARA', 'LOCALIZAÇÃO', 'CADASTRO', 'STATUS'].map(h => (
+              <span key={h} style={{ fontSize: 10, fontWeight: 700, color: '#B0B8C4', letterSpacing: '0.08em' }}>{h}</span>
             ))}
           </div>
         )}
+
+        {/* Rows */}
+        {loading ? (
+          <div style={{ padding: '32px 20px' }}>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} style={{
+                height: 20, borderRadius: 6, marginBottom: 14,
+                background: '#F5F6F8',
+                animation: 'pulse 1.4s ease-in-out infinite',
+                animationDelay: `${i * 0.1}s`,
+              }} />
+            ))}
+          </div>
+        ) : recent.length === 0 ? (
+          <EmptyState />
+        ) : (
+          recent.map((c, i) => (
+            <Link
+              key={c.id}
+              href={`/superadmin/camaras/${c.id}/vereadores`}
+              style={{
+                display: 'grid', gridTemplateColumns: '2fr 1fr 120px 100px',
+                alignItems: 'center',
+                padding: '14px 20px',
+                borderBottom: i < recent.length - 1 ? '1px solid #F5F6F8' : 'none',
+                textDecoration: 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#FAFBFD')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {/* Name + logo */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                  background: '#F0F4FF', border: '1px solid #DBEAFE',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                }}>
+                  {c.logoUrl
+                    ? <img src={`${API_BASE}${c.logoUrl}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }} />
+                    : <Building2 size={16} color={BLUE} strokeWidth={1.8} />}
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#0D1117', letterSpacing: '-0.01em', margin: 0 }}>{c.name}</p>
+                </div>
+              </div>
+
+              {/* City */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#8A94A2', fontSize: 12 }}>
+                <MapPin size={11} />
+                {c.city}, {c.state}
+              </div>
+
+              {/* Date */}
+              <span style={{ fontSize: 12, color: '#8A94A2' }}>
+                {new Date(c.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </span>
+
+              {/* Status */}
+              <div>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  fontSize: 11, fontWeight: 600,
+                  padding: '4px 10px', borderRadius: 6,
+                  background: c.isActive ? '#ECFDF5' : '#F5F6F8',
+                  color: c.isActive ? '#059669' : '#8A94A2',
+                  border: `1px solid ${c.isActive ? '#A7F3D0' : '#E4E7ED'}`,
+                }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: c.isActive ? '#059669' : '#CBD5E1',
+                    flexShrink: 0,
+                  }} />
+                  {c.isActive ? 'Ativa' : 'Inativa'}
+                </span>
+              </div>
+            </Link>
+          ))
+        )}
       </div>
+
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
     </div>
   );
 }
 
-function StatCard({ label, value, color, gradient, icon }: {
-  label: string; value: string; color: string; gradient: string; icon: React.ReactNode;
+function StatCard({ label, value, sub, color, icon, dot }: {
+  label: string; value: string; sub: string;
+  color: string; icon: React.ReactNode; dot?: boolean;
 }) {
   return (
-    <div className="rounded-2xl p-6 bg-white flex items-center gap-5"
-         style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 4px rgba(15,23,42,0.04)' }}>
-      <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-           style={{ background: gradient, border: `1px solid ${color}22` }}>
-        {icon}
+    <div style={{
+      background: '#fff', border: '1px solid #E4E7ED', borderRadius: 10,
+      padding: '20px 22px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{
+          width: 38, height: 38, borderRadius: 8,
+          background: `${color}10`, border: `1px solid ${color}20`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {icon}
+        </div>
+        {dot && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block' }} />
+            <span style={{ fontSize: 10, fontWeight: 700, color, letterSpacing: '0.06em' }}>AO VIVO</span>
+          </div>
+        )}
       </div>
-      <div>
-        <p className="font-tight font-bold text-4xl" style={{ color: '#0B1220', letterSpacing: '-0.03em' }}>{value}</p>
-        <p className="text-sm mt-1" style={{ color: '#8A94A2' }}>{label}</p>
-      </div>
+      <p style={{ fontSize: 32, fontWeight: 800, color: '#0D1117', letterSpacing: '-0.04em', margin: '0 0 4px', fontFamily: '"Inter Tight","Inter",sans-serif', lineHeight: 1 }}>
+        {value}
+      </p>
+      <p style={{ fontSize: 13, fontWeight: 600, color: '#0D1117', margin: '0 0 2px', letterSpacing: '-0.01em' }}>{label}</p>
+      <p style={{ fontSize: 11, color: '#B0B8C4', margin: 0 }}>{sub}</p>
     </div>
   );
 }
 
-function ChamberCard({ chamber: c }: { chamber: Chamber }) {
+function EmptyState() {
   return (
-    <Link href={`/superadmin/camaras/${c.id}/vereadores`}
-          className="group block rounded-2xl bg-white p-5 transition-all hover:shadow-md hover:-translate-y-0.5"
-          style={{ border: '1px solid rgba(15,23,42,0.08)', boxShadow: '0 1px 4px rgba(15,23,42,0.04)' }}>
-
-      {/* Top row: logo + status */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-14 h-14 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0"
-             style={{ background: 'rgba(82,130,255,0.07)', border: '1px solid rgba(82,130,255,0.15)' }}>
-          {c.logoUrl
-            ? <img src={`${API_BASE}${c.logoUrl}`} alt={c.name} className="w-full h-full object-contain p-1.5" />
-            : <Building2 size={26} style={{ color: 'oklch(0.52 0.16 255)' }} />}
-        </div>
-
-        <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
-              style={{
-                background: c.isActive ? 'rgba(16,185,129,0.1)' : 'rgba(15,23,42,0.06)',
-                color: c.isActive ? '#059669' : '#8A94A2',
-                border: `1px solid ${c.isActive ? 'rgba(16,185,129,0.2)' : 'rgba(15,23,42,0.1)'}`,
-              }}>
-          {c.isActive
-            ? <CheckCircle2 size={12} strokeWidth={2.5} />
-            : <XCircle size={12} strokeWidth={2.5} />}
-          {c.isActive ? 'Ativa' : 'Inativa'}
-        </span>
+    <div style={{ padding: '56px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' }}>
+      <div style={{ width: 52, height: 52, borderRadius: 10, background: '#F0F4FF', border: '1px solid #DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Building2 size={24} color={BLUE} strokeWidth={1.6} />
       </div>
-
-      {/* Name */}
-      <p className="font-tight font-bold text-base leading-snug mb-1.5 group-hover:text-blue-600 transition-colors"
-         style={{ color: '#0B1220', letterSpacing: '-0.01em' }}>
-        {c.name}
-      </p>
-
-      {/* City / State */}
-      <div className="flex items-center gap-1.5 text-sm" style={{ color: '#8A94A2' }}>
-        <MapPin size={13} />
-        {c.city}, {c.state}
+      <div>
+        <p style={{ fontSize: 14, fontWeight: 600, color: '#0D1117', margin: '0 0 4px' }}>Nenhuma câmara cadastrada</p>
+        <p style={{ fontSize: 13, color: '#8A94A2', margin: 0 }}>Comece criando a primeira câmara municipal</p>
       </div>
-
-      {/* Footer */}
-      <div className="mt-4 pt-4 flex items-center justify-between"
-           style={{ borderTop: '1px solid rgba(15,23,42,0.06)' }}>
-        <span className="text-xs" style={{ color: '#B0B8C4' }}>
-          Desde {new Date(c.createdAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
-        </span>
-        <span className="text-xs font-semibold flex items-center gap-1 transition-colors group-hover:text-blue-500"
-              style={{ color: 'oklch(0.52 0.16 255)' }}>
-          Gerenciar <ArrowRight size={12} />
-        </span>
-      </div>
-    </Link>
+      <Link href="/superadmin/camaras" style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '8px 16px', borderRadius: 8,
+        background: BLUE, color: '#fff',
+        fontWeight: 600, fontSize: 13, textDecoration: 'none',
+      }}>
+        <Plus size={13} strokeWidth={2.5} /> Cadastrar agora
+      </Link>
+    </div>
   );
 }
