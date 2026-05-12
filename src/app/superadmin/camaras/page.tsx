@@ -141,7 +141,24 @@ function CamarasPageInner() {
                 {c.city} — {c.state}
               </div>
               <div className="mt-3 pt-3 flex flex-col gap-2" style={{ borderTop: '1px solid #F0F2F5' }}>
-                <span className="font-mono-jet text-xs truncate" style={{ color: '#B0B8C4' }}>{c.slug}</span>
+                <div className="flex items-center justify-between gap-2" style={{
+                  background: '#F5F6F8', border: '1px solid #E4E7ED', borderRadius: 6, padding: '6px 10px',
+                }}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-mono-jet text-[9px] font-bold flex-shrink-0" style={{ color: '#8A94A2', letterSpacing: '0.12em' }}>CÓDIGO</span>
+                    <span className="font-mono-jet text-xs truncate" style={{ color: '#0D1117' }}>{c.slug}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigator.clipboard.writeText(c.slug); }}
+                    className="p-1 rounded transition-colors flex-shrink-0"
+                    style={{ color: '#8A94A2' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(20,71,230,0.08)'; e.currentTarget.style.color = '#1447E6'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}
+                    title="Copiar código">
+                    <Copy size={12} />
+                  </button>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <Link href={`/superadmin/camaras/${c.id}/vereadores`}
                         className="flex items-center justify-center gap-1.5 text-xs font-semibold rounded-lg transition-colors"

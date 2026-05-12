@@ -318,13 +318,13 @@ export default function VereadoresPage() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                {canCreate && selected.role !== 'presidente' && (
+                {canCreate && (selected.role !== 'presidente' || selected.id === user?.id) && (
                   <button onClick={() => setEditTarget(selected)}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-colors"
                           style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}
                           onMouseEnter={e => e.currentTarget.style.background = '#F6F7F9'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                    <Pencil size={13} /> Editar
+                    <Pencil size={13} /> {selected.id === user?.id ? 'Editar meu perfil' : 'Editar'}
                   </button>
                 )}
                 <Link href="/dashboard/auditoria"
