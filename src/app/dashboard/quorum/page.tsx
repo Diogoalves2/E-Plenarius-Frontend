@@ -29,10 +29,15 @@ export default function QuorumPage() {
 
       try {
         const { data: sess } = await api.get(`/sessions/active/${user.chamberId}`);
-        setSession(sess);
-        const { data: pres } = await api.get(`/sessions/${sess.id}/presences`);
-        const ids = (pres as any[]).map((p: any) => p.userId) as string[];
-        setPresences(new Set<string>(ids));
+        if (sess?.id) {
+          setSession(sess);
+          const { data: pres } = await api.get(`/sessions/${sess.id}/presences`);
+          const ids = (pres as any[]).map((p: any) => p.userId) as string[];
+          setPresences(new Set<string>(ids));
+        } else {
+          setSession(null);
+          setPresences(new Set());
+        }
       } catch {
         setSession(null);
         setPresences(new Set());
