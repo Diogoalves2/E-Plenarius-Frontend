@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, AlertTriangle } from 'lucide-react';
 
 const SYSTEM_LOGO_KEY = 'system_logo_url';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
 
 function resolveErrorMessage(err: any): { title: string; detail: string } {
   const status = err?.response?.status;
@@ -31,8 +32,19 @@ export default function LoginPage() {
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
 
   useEffect(() => {
-    const logo = localStorage.getItem(SYSTEM_LOGO_KEY);
-    if (logo) setSystemLogo(logo);
+    const cached = localStorage.getItem(SYSTEM_LOGO_KEY);
+    if (cached) setSystemLogo(cached);
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'}/upload/system-logo`)
+      .then(r => r.json())
+      .then(({ url }) => {
+        if (url) {
+          const full = `${API_BASE}${url}`;
+          setSystemLogo(full);
+          localStorage.setItem(SYSTEM_LOGO_KEY, full);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
