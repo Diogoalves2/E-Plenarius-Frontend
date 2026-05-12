@@ -57,7 +57,7 @@ export function Topbar({ onMenuToggle }: { onMenuToggle: () => void }) {
           /* eslint-disable-next-line @next/next/no-img-element */
           <img src={chamberLogo} alt="logo" className="object-contain flex-shrink-0" style={{ width: 28, height: 28 }} />
         ) : (
-          <Brasao size={26} color="oklch(0.52 0.16 255)" />
+          <Brasao size={26} color="#1447E6" />
         )}
         <span className="font-tight font-semibold text-gray-900 text-[13px] tracking-tight truncate hidden sm:block">
           {chamberName ?? '…'}
@@ -68,7 +68,7 @@ export function Topbar({ onMenuToggle }: { onMenuToggle: () => void }) {
       <div className="hidden md:flex items-center gap-1.5 ml-auto px-2.5 py-1 rounded-full text-[11px] font-mono-jet font-semibold tracking-wider"
            style={{ border: '1px solid rgba(15,23,42,0.08)', color: '#4B5563' }}>
         <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot"
-              style={{ background: 'oklch(0.52 0.20 25)' }} />
+              style={{ background: '#10b981' }} />
         AO VIVO
       </div>
 
@@ -82,7 +82,7 @@ export function Topbar({ onMenuToggle }: { onMenuToggle: () => void }) {
                  className="rounded-full object-cover flex-shrink-0" style={{ width: 28, height: 28 }} />
           ) : (
             <div className="rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-                 style={{ width: 28, height: 28, background: 'oklch(0.52 0.16 255)' }}>
+                 style={{ width: 28, height: 28, background: '#1447E6' }}>
               {user.initials || user.name.slice(0, 2).toUpperCase()}
             </div>
           )}
