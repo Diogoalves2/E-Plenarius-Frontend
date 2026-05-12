@@ -54,13 +54,13 @@ export default function LoginPage() {
       {/* Left — branding */}
       <div className="hidden lg:flex flex-col justify-between w-[480px] flex-shrink-0 p-12"
            style={{ borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           {systemLogo
-            ? <img src={systemLogo} alt="Logo" style={{ width: 36, height: 36, objectFit: 'contain', flexShrink: 0 }} />
-            : <Brasao size={36} color="#1447E6" />}
-          <span className="font-tight font-semibold text-white text-lg tracking-tight">
-            E-Plenarius
-          </span>
+            ? <img src={systemLogo} alt="Logo" style={{ maxHeight: 40, maxWidth: 200, objectFit: 'contain' }} />
+            : <>
+                <Brasao size={36} color="#1447E6" />
+                <span className="font-tight font-semibold text-white text-lg tracking-tight ml-3">E-Plenarius</span>
+              </>}
         </div>
 
         <div>
@@ -107,11 +107,13 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-10 lg:hidden">
+          <div className="flex items-center mb-10 lg:hidden">
             {systemLogo
-              ? <img src={systemLogo} alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain', flexShrink: 0 }} />
-              : <Brasao size={28} color="#1447E6" />}
-            <span className="font-tight font-semibold text-white">E-Plenarius</span>
+              ? <img src={systemLogo} alt="Logo" style={{ maxHeight: 32, maxWidth: 160, objectFit: 'contain' }} />
+              : <>
+                  <Brasao size={28} color="#1447E6" />
+                  <span className="font-tight font-semibold text-white ml-2">E-Plenarius</span>
+                </>}
           </div>
 
           <p className="font-mono-jet text-xs tracking-widest mb-1.5"
