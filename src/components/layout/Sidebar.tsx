@@ -10,9 +10,8 @@ import {
 import { clsx } from 'clsx';
 import api from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
-
-const SIDEBAR_BG   = 'radial-gradient(120% 90% at 40% 30%, rgb(26, 26, 26) 0%, rgb(13, 13, 13) 50%, rgb(0, 0, 0) 100%)';
+const API_BASE     = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const SIDEBAR_BG   = 'radial-gradient(120% 90% at 40% 30%, rgb(26,26,26) 0%, rgb(13,13,13) 50%, rgb(0,0,0) 100%)';
 const SIDEBAR_TEXT = 'rgba(255,255,255,0.65)';
 const ACTIVE_BG    = 'rgba(99,160,255,0.18)';
 const ACTIVE_TEXT  = '#FFFFFF';
@@ -37,8 +36,8 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [agendaCount, setAgendaCount]     = useState<number | null>(null);
   const [presenceCount, setPresenceCount] = useState<string | null>(null);
-  const [chamberName, setChamberName]     = useState<string | null>(null);
   const [chamberLogo, setChamberLogo]     = useState<string | null>(null);
+  const [chamberName, setChamberName]     = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.chamberId) return;
@@ -70,71 +69,61 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
     {
       section: 'Sessão',
       items: [
-        { href: '/dashboard',             icon: Radio,    label: 'Votação ao vivo',   badge: 'LIVE', badgeLive: true },
-        { href: '/dashboard/pauta',       icon: FileText, label: 'Ordem do dia',      badge: agendaCount !== null ? String(agendaCount) : undefined },
-        { href: '/dashboard/quorum',      icon: Users,    label: 'Quórum',            badge: presenceCount ?? undefined },
-        { href: '/dashboard/expediente',  icon: Mic,      label: 'Expediente' },
+        { href: '/dashboard',            icon: Radio,    label: 'Votação ao vivo',  badge: 'LIVE', badgeLive: true },
+        { href: '/dashboard/pauta',      icon: FileText, label: 'Ordem do dia',     badge: agendaCount !== null ? String(agendaCount) : undefined },
+        { href: '/dashboard/quorum',     icon: Users,    label: 'Quórum',           badge: presenceCount ?? undefined },
+        { href: '/dashboard/expediente', icon: Mic,      label: 'Expediente' },
         ...(isPresidente ? [{ href: '/dashboard/transmissao', icon: Video, label: 'Transmissão' }] : []),
       ],
     },
     {
       section: 'Câmara',
       items: [
-        { href: '/dashboard/regimento',   icon: BookOpen, label: 'Regimento Interno' },
+        { href: '/dashboard/regimento',    icon: BookOpen,  label: 'Regimento Interno' },
         ...(isPresidente ? [
-          { href: '/dashboard/sessoes',    icon: Clock,    label: 'Sessões' },
-          { href: '/dashboard/vereadores', icon: Users,    label: 'Vereadores' },
+          { href: '/dashboard/sessoes',    icon: Clock,     label: 'Sessões' },
+          { href: '/dashboard/vereadores', icon: Users,     label: 'Vereadores' },
         ] : []),
         { href: '/dashboard/estatisticas', icon: BarChart3, label: 'Estatísticas' },
-        { href: '/dashboard/auditoria',    icon: Shield,   label: 'Auditoria' },
+        { href: '/dashboard/auditoria',    icon: Shield,    label: 'Auditoria' },
       ],
     },
   ];
 
   return (
-    <nav
+    <aside
       className={clsx(
-        'flex flex-col',
-        'fixed top-14 bottom-0 left-0 z-30',
+        'fixed top-0 bottom-0 left-0 z-30 overflow-y-auto',
         'transition-transform duration-200 ease-in-out',
-        'lg:relative lg:top-0 lg:bottom-auto lg:left-auto lg:z-auto lg:translate-x-0',
+        'lg:relative lg:translate-x-0',
         open ? 'translate-x-0' : '-translate-x-full',
       )}
-      style={{ width: 224, background: SIDEBAR_BG, flexShrink: 0 }}
+      style={{ width: 272, background: SIDEBAR_BG, flexShrink: 0 }}
     >
-      {/* ── Logo da Câmara ── */}
-      <div className="flex-shrink-0 flex flex-col gap-1"
-           style={{ padding: '10px 12px 8px', borderBottom: 'rgba(255,255,255,0.08) 1px solid' }}>
-        {/* Fechar — mobile only */}
-        <div className="flex items-center justify-end mb-1 lg:hidden">
-          <button onClick={onClose} style={{ color: SIDEBAR_TEXT }}>
-            <X size={16} />
-          </button>
-        </div>
-
-        {chamberLogo
-          ? <img src={chamberLogo} alt="Logo" style={{ width: '100%', maxHeight: 36, objectFit: 'contain' }} />
-          : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
-              <Building2 size={22} color="#63A0FF" style={{ flexShrink: 0 }} />
-              <span className="font-tight font-semibold text-sm truncate" style={{ color: '#fff' }}>
-                {chamberName ?? '…'}
-              </span>
-            </div>
-          )
-        }
-        <div className="font-mono-jet text-[9px] font-bold text-right"
-             style={{ color: '#63A0FF', letterSpacing: '0.2em' }}>
-          {chamberName?.toUpperCase() ?? 'CÂMARA'}
-        </div>
+      {/* ── Logo + nome da câmara ── */}
+      <div className="flex items-center gap-3 flex-shrink-0"
+           style={{ height: 56, padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        {chamberLogo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={chamberLogo} alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
+        ) : (
+          <Building2 size={26} color="#63A0FF" style={{ flexShrink: 0 }} />
+        )}
+        <span className="font-tight font-semibold text-white text-sm leading-tight truncate flex-1"
+              style={{ letterSpacing: '-0.01em' }}>
+          {chamberName ?? '…'}
+        </span>
+        <button onClick={onClose} className="lg:hidden flex-shrink-0" style={{ color: SIDEBAR_TEXT }} aria-label="Fechar menu">
+          <X size={16} />
+        </button>
       </div>
 
-      {/* ── Nav ── */}
-      <div className="flex-1 overflow-y-auto px-3 py-3">
+      {/* ── Navegação ── */}
+      <div style={{ padding: '12px' }}>
         {NAV_ITEMS.map((group) => (
-          <div key={group.section} className="mb-1">
-            <p className="font-mono-jet text-[10px] px-3 py-2"
-               style={{ color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em' }}>
+          <div key={group.section} style={{ marginBottom: 8 }}>
+            <p className="font-mono-jet text-[10px]"
+               style={{ color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', padding: '8px 12px 4px' }}>
               {group.section.toUpperCase()}
             </p>
             {group.items.map((item) => {
@@ -166,15 +155,14 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
         ))}
       </div>
 
-      {/* ── Bottom ── */}
-      <div className="flex-shrink-0 px-3 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        {/* Sessão ativa */}
-        <div className="rounded-lg p-3 mb-2 text-xs"
+      {/* ── Rodapé ── */}
+      <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 8 }}>
+        <div className="rounded-lg p-3 mb-3 text-xs"
              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="font-mono-jet text-[10px] mb-1 flex items-center gap-1.5"
+          <p className="font-mono-jet text-[10px] mb-1.5 flex items-center gap-1.5"
              style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>
             {activeSession
-              ? <><span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: '#10b981' }} /> SESSÃO ATIVA</>
+              ? <><span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: '#10b981' }} />SESSÃO ATIVA</>
               : 'SEM SESSÃO'}
           </p>
           {activeSession ? (
@@ -193,13 +181,6 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
           )}
         </div>
 
-        {/* Usuário */}
-        <div className="px-3 py-2 mb-1">
-          <p className="text-sm font-semibold truncate text-white">{user?.name}</p>
-          <p className="text-xs truncate mt-0.5" style={{ color: SIDEBAR_TEXT }}>{user?.email}</p>
-        </div>
-
-        {/* Sair */}
         <button
           onClick={logout}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium"
@@ -211,6 +192,6 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
           Sair
         </button>
       </div>
-    </nav>
+    </aside>
   );
 }

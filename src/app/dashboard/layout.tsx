@@ -25,21 +25,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#F6F7F9' }}>
-      <Topbar onMenuToggle={() => setSidebarOpen(s => !s)} />
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Overlay para fechar sidebar no mobile/tablet */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-20 lg:hidden"
-            style={{ top: 56, background: 'rgba(0,0,0,0.4)' }}
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+    <div className="flex h-screen overflow-hidden" style={{ background: '#F6F7F9' }}>
+      {/* Overlay mobile/tablet */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 lg:hidden"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Topbar onMenuToggle={() => setSidebarOpen(s => !s)} />
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   );
