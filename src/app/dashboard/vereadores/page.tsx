@@ -669,8 +669,98 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
           )}
           {pwdError && <p className="text-xs mt-2" style={{ color: '#dc2626' }}>{pwdError}</p>}
         </div>
+
+        <PinSection userId={vereador.id} />
       </div>
     </Modal>
+  );
+}
+
+/* ── PIN section (mobile app) ───────────────────────────────────── */
+
+function PinSection({ userId }: { userId: string }) {
+  const [pin, setPin] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+
+  async function save() {
+    if (!/^\d{4}$/.test(pin)) {
+      setError('PIN deve ter exatamente 4 dígitos.');
+      return;
+    }
+    setLoading(true); setError(''); setSuccess(false);
+    try {
+      await api.patch(`/users/${userId}/pin`, { pin });
+      setSuccess(true);
+      setPin('');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao definir PIN');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function clearPin() {
+    if (!confirm('Remover o PIN do app deste vereador? Ele não conseguirá logar no app mobile até ter um novo PIN definido.')) return;
+    setLoading(true); setError(''); setSuccess(false);
+    try {
+      await api.patch(`/users/${userId}/pin`, { pin: null });
+      setSuccess(true);
+      setPin('');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao remover PIN');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="pt-4 mt-4" style={{ borderTop: '1px solid rgba(15,23,42,0.08)' }}>
+      <p className="font-mono-jet text-[10px] font-semibold mb-1" style={{ color: '#8A94A2', letterSpacing: '0.08em' }}>PIN DO APP MOBILE</p>
+      <p className="text-xs mb-3" style={{ color: '#8A94A2' }}>
+        Código de 4 dígitos para o vereador entrar no app do tablet. Anote e repasse ao vereador.
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="\d{4}"
+          maxLength={4}
+          value={pin}
+          onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setSuccess(false); setError(''); }}
+          placeholder="0000"
+          className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none font-mono-jet tracking-[0.4em] text-center"
+          style={iStyle}
+          onFocus={e => (e.target.style.borderColor = '#1447E6')}
+          onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')}
+        />
+        <button
+          type="button"
+          disabled={loading || pin.length !== 4}
+          onClick={save}
+          className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center gap-1.5 transition-opacity flex-shrink-0"
+          style={{ background: '#1447E6', opacity: (loading || pin.length !== 4) ? 0.5 : 1 }}>
+          {loading ? <Loader2 size={13} className="animate-spin" /> : null}
+          Definir
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={clearPin}
+          className="px-3 py-2.5 rounded-lg text-xs font-semibold flex-shrink-0"
+          style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#8A94A2' }}
+          title="Remover PIN cadastrado">
+          Limpar
+        </button>
+      </div>
+      {success && (
+        <p className="text-xs mt-2 flex items-center gap-1.5" style={{ color: '#059669' }}>
+          <Check size={12} /> PIN salvo com sucesso.
+        </p>
+      )}
+      {error && <p className="text-xs mt-2" style={{ color: '#dc2626' }}>{error}</p>}
+    </div>
   );
 }
 
