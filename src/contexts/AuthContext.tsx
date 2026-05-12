@@ -1,14 +1,16 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthUser, login as apiLogin, logout as apiLogout, getStoredUser, storeUser, clearUser, isAuthenticated } from '@/lib/auth';
+import api from '@/lib/api';
 
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (identifier: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -18,13 +20,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data } = await api.get('/users/me');
+      const merged: AuthUser = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        chamberId: data.chamberId ?? null,
+        initials: data.initials ?? '',
+        party: data.party ?? '',
+        avatarUrl: data.avatarUrl ?? null,
+      };
+      storeUser(merged);
+      setUser(merged);
+    } catch { /* keep stored user */ }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated()) {
       const stored = getStoredUser();
       if (stored) setUser(stored);
+      refreshUser().finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
-  }, []);
+  }, [refreshUser]);
 
   async function login(identifier: string, password: string) {
     const userData = await apiLogin(identifier, password);
@@ -41,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

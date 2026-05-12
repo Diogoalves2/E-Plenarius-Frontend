@@ -481,6 +481,7 @@ function NewVereadorModal({ chamberId, onClose, onCreated }: { chamberId: string
 /* ── Edit Member Modal ────────────────────────────────────────── */
 
 function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador; onClose: () => void; onSaved: () => void }) {
+  const { user, refreshUser } = useAuth();
   const [form, setForm] = useState({
     name: vereador.name,
     email: vereador.email,
@@ -533,6 +534,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
         patch.avatarUrl = av.url;
       }
       await api.patch(`/users/${vereador.id}`, patch);
+      if (vereador.id === user?.id) await refreshUser();
       onSaved();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao salvar');
