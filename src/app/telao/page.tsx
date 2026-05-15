@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSocket } from '@/hooks/useSocket';
 import { useVoting } from '@/hooks/useVoting';
 import { useVotingSounds } from '@/hooks/useVotingSounds';
+import { useExpedienteSounds } from '@/hooks/useExpedienteSounds';
 import { useExpediente, ExpedienteAtivo, AparteAtivo } from '@/hooks/useExpediente';
 import { Video, Volume2 } from 'lucide-react';
 import { fullSessionTitle } from '@/lib/sessionTitle';
@@ -54,6 +55,8 @@ export default function TelaoPage() {
   const { activeItem, counts, voteLog } = useVoting(sessionId, socket);
   const { expedienteAtivo, aparteAtivo } = useExpediente(sessionId);
   const { needsActivation: soundNeedsActivation, activate: activateSound } = useVotingSounds(socket);
+  const { needsActivation: expedienteSoundNeedsActivation } = useExpedienteSounds(socket);
+  const anySoundNeedsActivation = soundNeedsActivation || expedienteSoundNeedsActivation;
 
   // Controla exibição do resultado: true por 8s após voting:closed, depois volta ao quórum
   const [resultVisible, setResultVisible] = useState(false);
@@ -225,7 +228,7 @@ export default function TelaoPage() {
          style={{ background: '#0B0D10', color: '#E9EDF2', fontFamily: 'Inter, system-ui, sans-serif' }}>
 
       {/* Banner pra ativar som (autoplay bloqueado pelo browser) */}
-      {soundNeedsActivation && (
+      {anySoundNeedsActivation && (
         <button
           onClick={activateSound}
           className="flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm"
