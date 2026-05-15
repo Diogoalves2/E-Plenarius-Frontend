@@ -53,7 +53,7 @@ export default function EstatisticasPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
-          icon={<Calendar size={18} style={{ color: 'oklch(0.52 0.16 255)' }} />}
+          icon={<Calendar size={18} style={{ color: '#1447E6' }} />}
           label="Sessões realizadas"
           value={stats.sessions.encerradas}
           sub={`${stats.sessions.total} no total`}
@@ -99,7 +99,7 @@ export default function EstatisticasPage() {
                 return (
                   <div key={m.month} className="flex-1 flex flex-col items-center gap-1.5">
                     <span className="text-[10px] font-mono-jet font-semibold" style={{ color: '#0B1220' }}>{m.count}</span>
-                    <div className="w-full rounded-t-sm transition-all" style={{ height: `${Math.max(pct, 6)}%`, background: 'oklch(0.52 0.16 255)', minHeight: 4 }} />
+                    <div className="w-full rounded-t-sm transition-all" style={{ height: `${Math.max(pct, 6)}%`, background: '#1447E6', minHeight: 4 }} />
                     <span className="text-[10px] font-mono-jet" style={{ color: '#8A94A2' }}>{MONTH_LABELS[month]}</span>
                   </div>
                 );
@@ -116,7 +116,7 @@ export default function EstatisticasPage() {
           </div>
           <div className="flex flex-col gap-3">
             <ProgressRow label="Encerradas" count={stats.sessions.encerradas} total={stats.sessions.total} color="#059669" />
-            <ProgressRow label="Em andamento" count={stats.sessions.emAndamento} total={stats.sessions.total} color="oklch(0.52 0.16 255)" />
+            <ProgressRow label="Em andamento" count={stats.sessions.emAndamento} total={stats.sessions.total} color="#1447E6" />
             <ProgressRow label="Agendadas" count={stats.sessions.agendadas} total={stats.sessions.total} color="#b45309" />
           </div>
           <div className="mt-5 pt-4 flex gap-4" style={{ borderTop: '1px solid rgba(15,23,42,0.06)' }}>
@@ -150,7 +150,7 @@ export default function EstatisticasPage() {
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-20 rounded-full overflow-hidden" style={{ background: 'rgba(15,23,42,0.06)' }}>
                     <div className="h-full rounded-full"
-                         style={{ width: `${(v.count / (stats.topPresenca[0]?.count || 1)) * 100}%`, background: 'oklch(0.52 0.16 255)' }} />
+                         style={{ width: `${(v.count / (stats.topPresenca[0]?.count || 1)) * 100}%`, background: '#1447E6' }} />
                   </div>
                   <span className="font-mono-jet text-xs font-semibold flex-shrink-0" style={{ color: '#0B1220', minWidth: 28, textAlign: 'right' }}>
                     {v.count}
@@ -213,7 +213,7 @@ function MemberAvatar({ name, initials, avatarUrl }: { name: string; initials: s
   );
   return (
     <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-white"
-         style={{ background: 'oklch(0.52 0.16 255)' }}>
+         style={{ background: '#1447E6' }}>
       {initials}
     </div>
   );

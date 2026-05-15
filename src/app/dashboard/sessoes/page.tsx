@@ -99,7 +99,7 @@ export default function SessoesPage() {
           <div className="flex flex-col items-end gap-1">
             <button onClick={() => !hasRunning && setShowModal(true)}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm text-white transition-opacity"
-                    style={{ background: 'oklch(0.52 0.16 255)', opacity: hasRunning ? 0.45 : 1, cursor: hasRunning ? 'not-allowed' : 'pointer' }}>
+                    style={{ background: '#1447E6', opacity: hasRunning ? 0.45 : 1, cursor: hasRunning ? 'not-allowed' : 'pointer' }}>
               <Plus size={16} /> Nova Sessão
             </button>
             {hasRunning && (
@@ -123,7 +123,7 @@ export default function SessoesPage() {
                    style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                      style={{ background: 'rgba(82,130,255,0.08)' }}>
-                  <CalendarDays size={18} style={{ color: 'oklch(0.52 0.16 255)' }} />
+                  <CalendarDays size={18} style={{ color: '#1447E6' }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm" style={{ color: '#0B1220' }}>
@@ -256,7 +256,7 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
         {/* Preview do título completo */}
         {form.number && (
           <div className="px-3.5 py-2.5 rounded-lg text-sm font-semibold"
-               style={{ background: 'rgba(82,130,255,0.06)', border: '1px solid rgba(82,130,255,0.2)', color: 'oklch(0.52 0.16 255)' }}>
+               style={{ background: 'rgba(82,130,255,0.06)', border: '1px solid rgba(82,130,255,0.2)', color: '#1447E6' }}>
             {fullSessionTitle(Number(form.number), form.type, chamber)}
           </div>
         )}
@@ -287,7 +287,7 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
             {!draft && (
               <button type="button" onClick={() => setDraft(emptyDraft())}
                       className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
-                      style={{ background: 'rgba(82,130,255,0.08)', color: 'oklch(0.52 0.16 255)' }}>
+                      style={{ background: 'rgba(82,130,255,0.08)', color: '#1447E6' }}>
                 <Plus size={12} /> Adicionar Projeto
               </button>
             )}
@@ -402,7 +402,7 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={() => setDraft(null)} className="flex-1 py-2 rounded-lg text-xs font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>Cancelar</button>
                 <button type="button" onClick={saveDraft} disabled={!draft.number || !draft.title || !draft.authorName}
-                        className="flex-1 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: 'oklch(0.52 0.16 255)', opacity: (!draft.number || !draft.title || !draft.authorName) ? 0.5 : 1 }}>
+                        className="flex-1 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#1447E6', opacity: (!draft.number || !draft.title || !draft.authorName) ? 0.5 : 1 }}>
                   Adicionar
                 </button>
               </div>
@@ -421,7 +421,7 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
 const iStyle: React.CSSProperties = { background: 'white', border: '1px solid rgba(15,23,42,0.12)', color: '#0B1220', transition: 'border-color 0.15s' };
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`w-full px-3.5 py-2.5 rounded-lg text-sm outline-none ${props.className ?? ''}`} style={iStyle}
-    onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')} onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')} />;
+    onFocus={e => (e.target.style.borderColor = '#1447E6')} onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')} />;
 }
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold font-mono-jet" style={{ color: '#8A94A2', letterSpacing: '0.06em' }}>{label}{required && <span style={{ color: '#dc2626' }}> *</span>}</label>{children}</div>;
@@ -443,7 +443,7 @@ function ModalActions({ onClose, loading, label }: { onClose: () => void; loadin
   return (
     <div className="flex gap-3 pt-1">
       <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>Cancelar</button>
-      <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: 'oklch(0.52 0.16 255)', opacity: loading ? 0.7 : 1 }}>
+      <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: '#1447E6', opacity: loading ? 0.7 : 1 }}>
         {loading && <Loader2 size={14} className="animate-spin" />}{loading ? 'Salvando…' : label}
       </button>
     </div>

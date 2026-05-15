@@ -152,7 +152,7 @@ export default function RegimentoPage() {
               className="flex items-center gap-2 rounded-xl text-sm font-semibold text-white"
               style={{
                 padding: '10px 18px',
-                background: saved ? '#059669' : 'oklch(0.52 0.16 255)',
+                background: saved ? '#059669' : '#1447E6',
                 minHeight: 44,
               }}>
               {saved ? <><Check size={15} /> Salvo!</> : <><Upload size={15} /> {active ? 'Atualizar' : 'Cadastrar'}</>}
@@ -177,7 +177,7 @@ export default function RegimentoPage() {
                 placeholder="Ex: Regimento Interno da Câmara Municipal"
                 className="rounded-xl text-sm outline-none"
                 style={{ padding: '12px 14px', background: '#F6F7F9', border: '1px solid rgba(15,23,42,0.10)', color: '#0B1220' }}
-                onFocus={e => e.target.style.borderColor = 'oklch(0.52 0.16 255)'}
+                onFocus={e => e.target.style.borderColor = '#1447E6'}
                 onBlur={e => e.target.style.borderColor = 'rgba(15,23,42,0.10)'}
               />
             </div>
@@ -188,7 +188,7 @@ export default function RegimentoPage() {
                 placeholder="Ex: 2024.1"
                 className="rounded-xl text-sm outline-none"
                 style={{ padding: '12px 14px', background: '#F6F7F9', border: '1px solid rgba(15,23,42,0.10)', color: '#0B1220' }}
-                onFocus={e => e.target.style.borderColor = 'oklch(0.52 0.16 255)'}
+                onFocus={e => e.target.style.borderColor = '#1447E6'}
                 onBlur={e => e.target.style.borderColor = 'rgba(15,23,42,0.10)'}
               />
             </div>
@@ -199,7 +199,7 @@ export default function RegimentoPage() {
                 placeholder="Resumo das alterações..."
                 className="rounded-xl text-sm outline-none"
                 style={{ padding: '12px 14px', background: '#F6F7F9', border: '1px solid rgba(15,23,42,0.10)', color: '#0B1220' }}
-                onFocus={e => e.target.style.borderColor = 'oklch(0.52 0.16 255)'}
+                onFocus={e => e.target.style.borderColor = '#1447E6'}
                 onBlur={e => e.target.style.borderColor = 'rgba(15,23,42,0.10)'}
               />
             </div>
@@ -211,7 +211,7 @@ export default function RegimentoPage() {
             {file ? (
               <div className="flex items-center gap-3 p-4 rounded-xl"
                    style={{ background: 'rgba(82,130,255,0.05)', border: '1px solid rgba(82,130,255,0.2)' }}>
-                <FileText size={22} style={{ color: 'oklch(0.52 0.16 255)', flexShrink: 0 }} />
+                <FileText size={22} style={{ color: '#1447E6', flexShrink: 0 }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800 truncate">{file.name}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
@@ -227,7 +227,7 @@ export default function RegimentoPage() {
                 onClick={() => fileRef.current?.click()}
                 className="flex flex-col items-center justify-center gap-2 rounded-xl transition-colors"
                 style={{ padding: '24px 16px', border: '2px dashed rgba(15,23,42,0.12)', color: '#8A94A2', minHeight: 100 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'oklch(0.52 0.16 255)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#1447E6'; e.currentTarget.style.color = '#1447E6'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(15,23,42,0.12)'; e.currentTarget.style.color = '#8A94A2'; }}>
                 <Upload size={24} />
                 <span className="text-sm font-medium">Selecionar arquivo PDF</span>
@@ -256,7 +256,7 @@ export default function RegimentoPage() {
               className="flex-1 flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white"
               style={{
                 padding: '12px',
-                background: 'oklch(0.52 0.16 255)',
+                background: '#1447E6',
                 opacity: (!file || !title.trim() || saving) ? 0.5 : 1,
                 minHeight: 48,
               }}>
@@ -324,13 +324,13 @@ export default function RegimentoPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
                style={{ borderBottom: '1px solid rgba(15,23,42,0.06)' }}>
             <div className="flex items-center gap-3">
-              <BookOpen size={18} style={{ color: 'oklch(0.52 0.16 255)', flexShrink: 0 }} />
+              <BookOpen size={18} style={{ color: '#1447E6', flexShrink: 0 }} />
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-gray-900">{active.title}</span>
                   {active.version && (
                     <span className="text-[11px] font-mono-jet px-2 py-0.5 rounded"
-                          style={{ background: '#F0F4FF', color: 'oklch(0.52 0.16 255)' }}>
+                          style={{ background: '#F0F4FF', color: '#1447E6' }}>
                       v{active.version}
                     </span>
                   )}
@@ -348,7 +348,7 @@ export default function RegimentoPage() {
               rel="noreferrer"
               download
               className="flex items-center gap-2 rounded-xl text-sm font-semibold text-white flex-shrink-0"
-              style={{ padding: '10px 18px', background: 'oklch(0.52 0.16 255)', minHeight: 44 }}>
+              style={{ padding: '10px 18px', background: '#1447E6', minHeight: 44 }}>
               <Download size={15} /> Baixar PDF
             </a>
           </div>

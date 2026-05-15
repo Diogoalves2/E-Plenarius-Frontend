@@ -190,7 +190,7 @@ export default function ExpedientePage() {
                   <span className="text-[10px] font-mono-jet font-semibold px-2 py-0.5 rounded-full"
                         style={{ background: 'rgba(245,158,11,0.2)', color: '#f59e0b' }}>PAUSADO</span>
                 ) : (
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: 'oklch(0.52 0.16 255)' }} />
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: '#1447E6' }} />
                 )}
               </div>
               <p className="font-semibold text-white truncate">{expedienteAtivo.vereador.name}</p>
@@ -309,7 +309,7 @@ export default function ExpedientePage() {
                 <span className="text-sm font-medium text-gray-800 flex-1">{s.vereador.name}</span>
                 <button onClick={() => aceitarAparte(s.userId)} disabled={loading}
                         className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold"
-                        style={{ background: 'oklch(0.52 0.16 255)', color: '#fff' }}>
+                        style={{ background: '#1447E6', color: '#fff' }}>
                   <CheckCircle size={11} /> Aceitar
                 </button>
               </div>
@@ -326,7 +326,7 @@ export default function ExpedientePage() {
             return (
               <div key={tipo} className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)' }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <Clock size={15} style={{ color: inscrito ? 'oklch(0.52 0.16 255)' : '#8A94A2' }} />
+                  <Clock size={15} style={{ color: inscrito ? '#1447E6' : '#8A94A2' }} />
                   <span className="text-sm font-semibold text-gray-800">{TIPO_LABEL[tipo]}</span>
                   <span className="ml-auto text-xs text-gray-400 font-mono-jet">{TIPO_DURACAO[tipo]}</span>
                 </div>
@@ -342,7 +342,7 @@ export default function ExpedientePage() {
                 ) : (
                   <button onClick={() => inscrever(tipo)} disabled={loading}
                           className="w-full flex items-center justify-center gap-1.5 rounded-xl text-sm font-semibold"
-                          style={{ padding: '10px 12px', background: 'oklch(0.52 0.16 255)', color: '#fff', minHeight: 44 }}>
+                          style={{ padding: '10px 12px', background: '#1447E6', color: '#fff', minHeight: 44 }}>
                     <Mic size={14} /> Inscrever-se
                   </button>
                 )}
@@ -446,11 +446,11 @@ export default function ExpedientePage() {
                         'text-gray-900': tabAtiva === tipo,
                         'text-gray-400 hover:text-gray-600': tabAtiva !== tipo,
                       })}
-                      style={{ borderBottom: tabAtiva === tipo ? '2px solid oklch(0.52 0.16 255)' : '2px solid transparent' }}>
+                      style={{ borderBottom: tabAtiva === tipo ? '2px solid #1447E6' : '2px solid transparent' }}>
                 {TIPO_LABEL[tipo]}
                 <span className="text-[10px] font-mono-jet px-1.5 py-0.5 rounded"
                       style={{ background: tabAtiva === tipo ? 'oklch(0.52 0.16 255 / 0.1)' : '#F3F4F6',
-                               color: tabAtiva === tipo ? 'oklch(0.52 0.16 255)' : '#9CA3AF' }}>
+                               color: tabAtiva === tipo ? '#1447E6' : '#9CA3AF' }}>
                   {count}
                 </span>
               </button>
@@ -501,8 +501,8 @@ export default function ExpedientePage() {
                     </span>
                   ) : isAtivo ? (
                     <span className="flex items-center gap-1.5 text-[11px] font-mono-jet px-2 py-0.5 rounded-full"
-                          style={{ background: 'oklch(0.52 0.16 255 / 0.1)', color: 'oklch(0.52 0.16 255)' }}>
-                      <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot inline-block" style={{ background: 'oklch(0.52 0.16 255)' }} />
+                          style={{ background: 'oklch(0.52 0.16 255 / 0.1)', color: '#1447E6' }}>
+                      <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot inline-block" style={{ background: '#1447E6' }} />
                       Na tribuna
                     </span>
                   ) : null}
@@ -517,7 +517,7 @@ export default function ExpedientePage() {
                       )}
                       <button onClick={() => liberar(inscricao.id)} disabled={loading}
                               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
-                              style={{ background: 'oklch(0.52 0.16 255)', color: '#fff' }}>
+                              style={{ background: '#1447E6', color: '#fff' }}>
                         <Mic size={12} /> Liberar
                       </button>
                     </div>

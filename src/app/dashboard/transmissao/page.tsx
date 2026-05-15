@@ -206,7 +206,7 @@ export default function TransmissaoPage() {
                 placeholder="https://www.youtube.com/watch?v=... ou https://youtu.be/..."
                 className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
                 style={{ background: 'white', border: '1px solid rgba(15,23,42,0.12)', color: '#0B1220' }}
-                onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')}
+                onFocus={e => (e.target.style.borderColor = '#1447E6')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')}
               />
             </div>
@@ -224,7 +224,7 @@ export default function TransmissaoPage() {
                             onClick={() => setThumbMode(mode)}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors"
                             style={{
-                              background: thumbMode === mode ? 'oklch(0.52 0.16 255)' : 'white',
+                              background: thumbMode === mode ? '#1447E6' : 'white',
                               color: thumbMode === mode ? '#fff' : '#8A94A2',
                             }}>
                       {mode === 'url' ? <><Link size={11} /> URL</> : <><Upload size={11} /> Upload</>}
@@ -241,7 +241,7 @@ export default function TransmissaoPage() {
                   placeholder="https://… (deixe em branco para usar a do YouTube)"
                   className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
                   style={{ background: 'white', border: '1px solid rgba(15,23,42,0.12)', color: '#0B1220' }}
-                  onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')}
+                  onFocus={e => (e.target.style.borderColor = '#1447E6')}
                   onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')}
                 />
               ) : (
@@ -270,7 +270,7 @@ export default function TransmissaoPage() {
                     <button type="button" onClick={() => fileInputRef.current?.click()}
                             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm transition-all"
                             style={{ border: '2px dashed rgba(15,23,42,0.12)', color: '#8A94A2' }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'oklch(0.52 0.16 255)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#1447E6'; e.currentTarget.style.color = '#1447E6'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
                             onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(15,23,42,0.12)'; e.currentTarget.style.color = '#8A94A2'; e.currentTarget.style.background = 'transparent'; }}>
                       <Upload size={15} />
                       Clique para selecionar imagem
@@ -302,7 +302,7 @@ export default function TransmissaoPage() {
                   {youtubeUrl && !thumbPreviewLocal && !customThumb && (
                     <a href={youtubeUrl} target="_blank" rel="noreferrer"
                        className="text-[11px] font-semibold mt-1 inline-flex items-center gap-1"
-                       style={{ color: 'oklch(0.52 0.16 255)' }}>
+                       style={{ color: '#1447E6' }}>
                       <ExternalLink size={10} /> Abrir no YouTube
                     </a>
                   )}
@@ -336,7 +336,7 @@ export default function TransmissaoPage() {
               )}
               <button onClick={saveStream} disabled={saving || uploadingThumb}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white ml-auto"
-                      style={{ background: saved ? '#059669' : 'oklch(0.52 0.16 255)',
+                      style={{ background: saved ? '#059669' : '#1447E6',
                                opacity: (saving || uploadingThumb) ? 0.7 : 1 }}>
                 {uploadingThumb
                   ? <><Loader2 size={13} className="animate-spin" /> Enviando imagem…</>
@@ -352,7 +352,7 @@ export default function TransmissaoPage() {
           {/* Telão link */}
           <div className="bg-white rounded-xl p-5" style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
             <div className="flex items-center gap-2 mb-3">
-              <Monitor size={16} style={{ color: 'oklch(0.52 0.16 255)' }} />
+              <Monitor size={16} style={{ color: '#1447E6' }} />
               <p className="font-semibold text-sm" style={{ color: '#0B1220' }}>Link do Telão</p>
             </div>
             <div className="flex items-center gap-2 p-3 rounded-lg mb-3"
@@ -366,7 +366,7 @@ export default function TransmissaoPage() {
             <div className="flex gap-2">
               <a href={telaoUrl} target="_blank" rel="noreferrer"
                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-semibold text-white"
-                 style={{ background: 'oklch(0.52 0.16 255)' }}>
+                 style={{ background: '#1447E6' }}>
                 <ExternalLink size={14} /> Abrir Telão
               </a>
               <button onClick={copyLink}
@@ -380,7 +380,7 @@ export default function TransmissaoPage() {
 
           {/* Instructions */}
           <div className="rounded-xl p-4" style={{ background: 'rgba(82,130,255,0.05)', border: '1px solid rgba(82,130,255,0.12)' }}>
-            <p className="text-xs font-semibold mb-2" style={{ color: 'oklch(0.52 0.16 255)' }}>COMO USAR O TELÃO</p>
+            <p className="text-xs font-semibold mb-2" style={{ color: '#1447E6' }}>COMO USAR O TELÃO</p>
             <ol className="text-xs flex flex-col gap-1.5" style={{ color: '#4B5563' }}>
               {[
                 'Preencha o link da live do YouTube e clique em "Salvar no telão".',
@@ -390,7 +390,7 @@ export default function TransmissaoPage() {
               ].map((tip, i) => (
                 <li key={i} className="flex gap-2">
                   <span className="font-mono-jet font-bold flex-shrink-0"
-                        style={{ color: 'oklch(0.52 0.16 255)' }}>{i + 1}.</span>
+                        style={{ color: '#1447E6' }}>{i + 1}.</span>
                   {tip}
                 </li>
               ))}

@@ -246,7 +246,7 @@ export default function TelaoPage() {
       {/* Topbar */}
       <div className="flex items-center gap-5 px-10 flex-shrink-0"
            style={{ minHeight: 80, borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#111418' }}>
-        <Brasao size={44} color="oklch(0.52 0.16 255)" chamberInfo={chamberInfo} />
+        <Brasao size={44} color="#1447E6" chamberInfo={chamberInfo} />
         <div>
           <div className="text-[11px] font-mono-jet tracking-widest" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>
             {chamberInfo ? `${chamberInfo.name.toUpperCase()} · ${chamberInfo.state.toUpperCase()}` : 'CÂMARA MUNICIPAL'}
@@ -293,8 +293,8 @@ export default function TelaoPage() {
               {activeItem ? (
                 <>
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-mono-jet font-semibold px-3 py-1.5 rounded-full"
-                        style={{ background: 'rgba(82,130,255,0.15)', color: 'oklch(0.52 0.16 255)' }}>
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot inline-block" style={{ background: 'oklch(0.52 0.16 255)' }} />
+                        style={{ background: 'rgba(82,130,255,0.15)', color: '#1447E6' }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot inline-block" style={{ background: '#1447E6' }} />
                     EM VOTAÇÃO
                   </span>
                   <span className="text-sm font-mono-jet" style={{ color: '#5B636D' }}>
@@ -375,13 +375,13 @@ function TelaoExpediente({ expediente, aparte, connected, chamberInfo }: {
       {/* Topbar */}
       <div className="flex items-center gap-5 px-10 flex-shrink-0"
            style={{ height: 68, borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0E1117' }}>
-        <Brasao size={36} color="oklch(0.52 0.16 255)" chamberInfo={chamberInfo} />
+        <Brasao size={36} color="#1447E6" chamberInfo={chamberInfo} />
         <div>
           <div className="text-[10px] font-mono-jet tracking-widest" style={{ color: '#4B5563', letterSpacing: '0.1em' }}>
             {chamberInfo ? `${chamberInfo.name.toUpperCase()} · ${chamberInfo.state.toUpperCase()}` : 'CÂMARA MUNICIPAL'}
           </div>
           <div className="font-semibold text-sm mt-0.5 flex items-center gap-2" style={{ letterSpacing: '-0.01em' }}>
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: 'oklch(0.52 0.16 255)' }} />
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: '#1447E6' }} />
             {tipo === 'grande' ? 'Grande Expediente' : 'Pequeno Expediente'}
           </div>
         </div>
@@ -526,7 +526,7 @@ function TelaoQuorum({ vereadores, presentes, connected, mm, ss, sessionInfo, ch
       {/* Topbar */}
       <div className="flex items-center gap-5 px-10 flex-shrink-0"
            style={{ minHeight: 110, borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#111418' }}>
-        <Brasao size={80} color="oklch(0.52 0.16 255)" chamberInfo={chamberInfo} />
+        <Brasao size={80} color="#1447E6" chamberInfo={chamberInfo} />
         <div>
           <div className="font-mono-jet font-semibold tracking-widest" style={{ fontSize: 14, color: '#7A8494', letterSpacing: '0.12em' }}>
             {chamberInfo ? `${chamberInfo.name.toUpperCase()} · ${chamberInfo.state.toUpperCase()}` : 'CÂMARA MUNICIPAL'}
@@ -794,7 +794,7 @@ function VotoTicker({
             {/* linha colorida no topo ao votar */}
             {voted && (
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-                            background: isSecreta ? 'oklch(0.52 0.16 255)' : color! }} />
+                            background: isSecreta ? '#1447E6' : color! }} />
             )}
             {/* avatar */}
             <div style={{
@@ -827,7 +827,7 @@ function VotoTicker({
                 fontSize: 10, fontWeight: 700,
                 fontFamily: 'ui-monospace, monospace',
                 letterSpacing: '0.06em', flexShrink: 0,
-                color: isSecreta ? 'oklch(0.52 0.16 255)' : color!,
+                color: isSecreta ? '#1447E6' : color!,
               }}>
                 {voteLabel}
               </div>

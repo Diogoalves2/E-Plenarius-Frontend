@@ -18,7 +18,7 @@ interface AuditLog {
 
 const ACTION_COLORS: Record<string, string> = {
   'vote:cast':       '#059669',
-  'voting:opened':   'oklch(0.52 0.16 255)',
+  'voting:opened':   '#1447E6',
   'voting:closed':   '#b45309',
   'session:started': '#059669',
   'session:ended':   '#8A94A2',

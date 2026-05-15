@@ -178,7 +178,7 @@ export default function AtaPage() {
         </button>
         <button onClick={() => window.print()}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                style={{ background: 'oklch(0.52 0.16 255)' }}>
+                style={{ background: '#1447E6' }}>
           <Printer size={15} /> Imprimir / PDF
         </button>
       </div>

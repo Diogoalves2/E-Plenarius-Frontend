@@ -44,7 +44,7 @@ interface ActiveSession { id: string; number: number; type: string; status: stri
 
 const STATUS_STYLE: Record<string, { label: string; bg: string; color: string }> = {
   pendente:    { label: 'Pendente',    bg: 'rgba(15,23,42,0.06)',   color: '#8A94A2' },
-  em_votacao:  { label: 'Em votação',  bg: 'rgba(82,130,255,0.1)',  color: 'oklch(0.52 0.16 255)' },
+  em_votacao:  { label: 'Em votação',  bg: 'rgba(82,130,255,0.1)',  color: '#1447E6' },
   aprovado:    { label: 'Aprovado',    bg: 'rgba(16,185,129,0.1)',  color: '#059669' },
   rejeitado:   { label: 'Reprovado',   bg: 'rgba(239,68,68,0.1)',   color: '#dc2626' },
   retirado:    { label: 'Retirado',    bg: 'rgba(234,179,8,0.1)',   color: '#b45309' },
@@ -109,7 +109,7 @@ export default function PautaPage() {
         {canCreate && (
           <button onClick={() => setShowModal(true)}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm text-white hover:opacity-90 transition-opacity"
-                  style={{ background: 'oklch(0.52 0.16 255)' }}>
+                  style={{ background: '#1447E6' }}>
             <Plus size={16} /> Adicionar Item
           </button>
         )}
@@ -146,7 +146,7 @@ export default function PautaPage() {
                     {item.pdfUrl && (
                       <a href={`${API_BASE}${item.pdfUrl}`} target="_blank" rel="noopener noreferrer"
                          className="flex items-center gap-1 text-xs font-semibold flex-shrink-0 transition-opacity hover:opacity-70"
-                         style={{ color: 'oklch(0.52 0.16 255)' }}>
+                         style={{ color: '#1447E6' }}>
                         <Paperclip size={10} /> PDF
                       </a>
                     )}
@@ -161,7 +161,7 @@ export default function PautaPage() {
                 </div>
                 {/* Voting type */}
                 <span className="text-xs font-mono-jet font-semibold px-2 py-0.5 rounded w-fit"
-                      style={{ background: item.votingType === 'secreta' ? 'rgba(139,92,246,0.1)' : 'rgba(82,130,255,0.08)', color: item.votingType === 'secreta' ? '#6d28d9' : 'oklch(0.52 0.16 255)' }}>
+                      style={{ background: item.votingType === 'secreta' ? 'rgba(139,92,246,0.1)' : 'rgba(82,130,255,0.08)', color: item.votingType === 'secreta' ? '#6d28d9' : '#1447E6' }}>
                   {item.votingType === 'secreta' ? 'SECRETA' : 'ABERTA'}
                 </span>
                 {/* Status */}
@@ -260,7 +260,7 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
                     placeholder="Disposições e ementa do projeto..." rows={3}
                     className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none resize-none"
                     style={iStyle}
-                    onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')}
+                    onFocus={e => (e.target.style.borderColor = '#1447E6')}
                     onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')} />
         </Field>
         <Field label="PROPONENTE" required>
@@ -322,7 +322,7 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
         <Field label="DOCUMENTO PDF">
           {pdfFile ? (
             <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg" style={{ border: '1px solid rgba(15,23,42,0.12)', background: 'white' }}>
-              <Paperclip size={14} style={{ color: 'oklch(0.52 0.16 255)', flexShrink: 0 }} />
+              <Paperclip size={14} style={{ color: '#1447E6', flexShrink: 0 }} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: '#0B1220' }}>{pdfFile.name}</p>
                 <p className="text-xs" style={{ color: '#8A94A2' }}>{(pdfFile.size / 1024).toFixed(0)} KB</p>
@@ -336,7 +336,7 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
             <button type="button" onClick={() => pdfRef.current?.click()}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-all"
                     style={{ border: '2px dashed rgba(15,23,42,0.12)', color: '#8A94A2' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'oklch(0.52 0.16 255)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#1447E6'; e.currentTarget.style.color = '#1447E6'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(15,23,42,0.12)'; e.currentTarget.style.color = '#8A94A2'; e.currentTarget.style.background = 'transparent'; }}>
               <Paperclip size={15} /> Anexar PDF do projeto (máx. 20 MB)
             </button>
@@ -355,7 +355,7 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
 const iStyle: React.CSSProperties = { background: 'white', border: '1px solid rgba(15,23,42,0.12)', color: '#0B1220', transition: 'border-color 0.15s' };
 function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`w-full px-3.5 py-2.5 rounded-lg text-sm outline-none ${className}`} style={iStyle}
-    onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')} onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')} />;
+    onFocus={e => (e.target.style.borderColor = '#1447E6')} onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')} />;
 }
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold font-mono-jet" style={{ color: '#8A94A2', letterSpacing: '0.06em' }}>{label}{required && <span style={{ color: '#dc2626' }}> *</span>}</label>{children}</div>;
@@ -377,7 +377,7 @@ function ModalActions({ onClose, loading, label }: { onClose: () => void; loadin
   return (
     <div className="flex gap-3 pt-1">
       <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>Cancelar</button>
-      <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: 'oklch(0.52 0.16 255)', opacity: loading ? 0.7 : 1 }}>
+      <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: '#1447E6', opacity: loading ? 0.7 : 1 }}>
         {loading && <Loader2 size={14} className="animate-spin" />}{loading ? 'Salvando…' : label}
       </button>
     </div>

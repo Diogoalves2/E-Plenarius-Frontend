@@ -138,7 +138,7 @@ function SessionCard({ session, chamberId, highlight }: { session: Session; cham
                     transition: 'box-shadow 0.15s' }}>
         <div style={{ width: 40, height: 40, borderRadius: 8, background: 'rgba(82,130,255,0.08)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Calendar size={18} style={{ color: 'oklch(0.52 0.16 255)' }} />
+          <Calendar size={18} style={{ color: '#1447E6' }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: '#0B1220', margin: '0 0 2px' }}>
@@ -161,9 +161,9 @@ function SessionCard({ session, chamberId, highlight }: { session: Session; cham
 function Brasao({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 80 80" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="40" cy="40" r="38" stroke="oklch(0.52 0.16 255)" strokeWidth="1.5" />
+      <circle cx="40" cy="40" r="38" stroke="#1447E6" strokeWidth="1.5" />
       <path d="M40 18 L44.5 32 L59 32 L47.2 40.5 L51.8 54.5 L40 46 L28.2 54.5 L32.8 40.5 L21 32 L35.5 32 Z"
-            fill="oklch(0.52 0.16 255)" opacity="0.92" />
+            fill="#1447E6" opacity="0.92" />
     </svg>
   );
 }

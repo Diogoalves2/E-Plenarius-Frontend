@@ -80,7 +80,7 @@ export default function VotarPage() {
            style={{ background: '#fff', borderBottom: '1px solid rgba(15,23,42,0.08)' }}>
         <div>
           <p className="text-[11px] font-mono-jet font-semibold"
-             style={{ color: isOpen ? 'oklch(0.52 0.16 255)' : isClosed ? '#475569' : '#f59e0b', letterSpacing: '0.08em' }}>
+             style={{ color: isOpen ? '#1447E6' : isClosed ? '#475569' : '#f59e0b', letterSpacing: '0.08em' }}>
             {isOpen ? '● EM VOTAÇÃO' : isClosed ? 'VOTAÇÃO ENCERRADA' : 'AGUARDANDO VOTAÇÃO'}
           </p>
           {activeItem && (
@@ -115,7 +115,7 @@ export default function VotarPage() {
               <div className="flex items-center justify-center rounded-full"
                    style={{ width: 64, height: 64, background: 'rgba(82,130,255,0.1)' }}>
                 <div className="w-4 h-4 rounded-full animate-pulse"
-                     style={{ background: 'oklch(0.52 0.16 255)' }} />
+                     style={{ background: '#1447E6' }} />
               </div>
             }
             title="Aguardando votação"
@@ -132,7 +132,7 @@ export default function VotarPage() {
                 <span className="text-[10px] font-mono-jet font-semibold px-2.5 py-1 rounded-full"
                       style={{
                         background: isOpen ? 'rgba(82,130,255,0.1)' : 'rgba(100,116,139,0.1)',
-                        color: isOpen ? 'oklch(0.52 0.16 255)' : '#475569',
+                        color: isOpen ? '#1447E6' : '#475569',
                         letterSpacing: '0.06em',
                       }}>
                   {activeItem.votingType === 'secreta' ? '🔒 VOTO SECRETO' : '👁 VOTAÇÃO ABERTA'}
@@ -275,7 +275,7 @@ function VoteConfirmation({ choice, hash }: { choice: string | null; hash: strin
     sim:       { bg: 'rgba(16,185,129,0.1)',   color: '#059669',               label: '✓  SIM' },
     nao:       { bg: 'rgba(239,68,68,0.1)',    color: '#dc2626',               label: '✗  NÃO' },
     abstencao: { bg: 'rgba(100,116,139,0.1)',  color: '#475569',               label: '—  ABSTENÇÃO' },
-    secreta:   { bg: 'rgba(82,130,255,0.1)',   color: 'oklch(0.52 0.16 255)',  label: '🔒  VOTO SECRETO' },
+    secreta:   { bg: 'rgba(82,130,255,0.1)',   color: '#1447E6',  label: '🔒  VOTO SECRETO' },
   };
   const c = (choice && cfg[choice]) ? cfg[choice] : cfg.abstencao;
 

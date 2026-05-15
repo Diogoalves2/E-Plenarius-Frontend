@@ -172,8 +172,8 @@ export default function SessaoPublicaPage() {
 
                         {isVotando && (
                           <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.52 0.16 255)', display: 'inline-block' }} />
-                            <span style={{ fontSize: 12, fontWeight: 600, color: 'oklch(0.52 0.16 255)', fontFamily: 'monospace' }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#1447E6', display: 'inline-block' }} />
+                            <span style={{ fontSize: 12, fontWeight: 600, color: '#1447E6', fontFamily: 'monospace' }}>
                               VOTAÇÃO EM ANDAMENTO
                             </span>
                           </div>

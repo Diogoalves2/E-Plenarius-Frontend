@@ -137,7 +137,7 @@ export default function VotacaoAoVivoPage() {
                 {activeItem?.authorUser && (
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                         style={{ background: 'oklch(0.52 0.16 255)' }}>
+                         style={{ background: '#1447E6' }}>
                       {activeItem.authorUser.initials}
                     </div>
                     <span className="text-xs text-gray-500">
@@ -169,7 +169,7 @@ export default function VotacaoAoVivoPage() {
                           if (next) openVoting(next.id);
                         }}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
-                        style={{ background: 'oklch(0.52 0.16 255)' }}>
+                        style={{ background: '#1447E6' }}>
                         <Play size={13} /> Abrir votação
                       </button>
                     )}
@@ -200,7 +200,7 @@ export default function VotacaoAoVivoPage() {
                 </span>
                 <div className="ml-auto h-1.5 rounded-full overflow-hidden" style={{ width: 140, background: '#EFF1F4' }}>
                   <div className="h-full rounded-full transition-all duration-500"
-                       style={{ width: `${presentes ? (totalVotos / presentes) * 100 : 0}%`, background: 'oklch(0.52 0.16 255)' }} />
+                       style={{ width: `${presentes ? (totalVotos / presentes) * 100 : 0}%`, background: '#1447E6' }} />
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3">
@@ -301,7 +301,7 @@ export default function VotacaoAoVivoPage() {
                 {isPresidente && item.status === 'pendente' && !activeItem && (
                   <button onClick={() => openVoting(item.id)}
                     className="text-xs font-semibold px-2.5 py-1 rounded-lg text-white flex-shrink-0"
-                    style={{ background: 'oklch(0.52 0.16 255)' }}>
+                    style={{ background: '#1447E6' }}>
                     Abrir
                   </button>
                 )}
@@ -332,7 +332,7 @@ function NoSessionCard() {
 function StatusBadge({ status }: { status: string }) {
   const cfg = {
     aguardando: { label: 'Aguardando abertura', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-    em_votacao: { label: 'Em votação', color: 'oklch(0.52 0.16 255)', bg: 'rgba(82,130,255,0.1)' },
+    em_votacao: { label: 'Em votação', color: '#1447E6', bg: 'rgba(82,130,255,0.1)' },
     encerrada: { label: 'Encerrada', color: '#475569', bg: 'rgba(100,116,139,0.1)' },
   }[status] ?? { label: status, color: '#475569', bg: 'rgba(100,116,139,0.1)' };
 
@@ -383,7 +383,7 @@ function VereadorCell({ event, index }: { event: any; index: number }) {
     </div>
   );
 
-  const colorMap: Record<string, string> = { sim: '#16a34a', nao: '#dc2626', abstencao: '#475569', secreta: 'oklch(0.52 0.16 255)' };
+  const colorMap: Record<string, string> = { sim: '#16a34a', nao: '#dc2626', abstencao: '#475569', secreta: '#1447E6' };
   const c = colorMap[event.choice] || '#8A94A2';
   const voteLabel = event.choice !== 'secreta' ? event.choice.toUpperCase() : '●●●';
 
@@ -432,7 +432,7 @@ function VereadorCell({ event, index }: { event: any; index: number }) {
 function ItemStatus({ status }: { status: string }) {
   const cfg: Record<string, any> = {
     pendente: { label: 'Pendente', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-    em_votacao: { label: 'Em votação', color: 'oklch(0.52 0.16 255)', bg: 'rgba(82,130,255,0.1)' },
+    em_votacao: { label: 'Em votação', color: '#1447E6', bg: 'rgba(82,130,255,0.1)' },
     aprovado: { label: 'Aprovado', color: '#16a34a', bg: 'rgba(34,197,94,0.1)' },
     rejeitado: { label: 'Reprovado', color: '#dc2626', bg: 'rgba(239,68,68,0.1)' },
     retirado: { label: 'Retirado', color: '#475569', bg: 'rgba(100,116,139,0.1)' },

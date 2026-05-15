@@ -157,7 +157,7 @@ export default function VereadoresPage() {
           {canCreate && (
             <button onClick={() => setShowModal(true)}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-sm text-white hover:opacity-90 transition-opacity"
-                    style={{ background: 'oklch(0.52 0.16 255)' }}>
+                    style={{ background: '#1447E6' }}>
               <Plus size={15} /> Cadastrar vereador
             </button>
           )}
@@ -174,7 +174,7 @@ export default function VereadoresPage() {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome, partido ou cargo..."
                      className="w-full pl-9 pr-3.5 py-2 rounded-lg text-sm outline-none"
                      style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#0B1220', background: 'white', minWidth: 260 }}
-                     onFocus={e => e.target.style.borderColor = 'oklch(0.52 0.16 255)'}
+                     onFocus={e => e.target.style.borderColor = '#1447E6'}
                      onBlur={e => e.target.style.borderColor = 'rgba(15,23,42,0.12)'} />
             </div>
             <p className="text-sm flex-shrink-0" style={{ color: '#8A94A2' }}>
@@ -275,7 +275,7 @@ export default function VereadoresPage() {
                       </span>
                     )}
                     <span className="text-xs px-2 py-0.5 rounded font-mono-jet font-semibold"
-                          style={{ background: 'rgba(82,130,255,0.08)', color: 'oklch(0.52 0.16 255)' }}>
+                          style={{ background: 'rgba(82,130,255,0.08)', color: '#1447E6' }}>
                       {displayTitle(selected)}
                     </span>
                   </div>
@@ -431,7 +431,7 @@ function NewVereadorModal({ chamberId, onClose, onCreated }: { chamberId: string
             <button type="button" onClick={() => avatarRef.current?.click()}
                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm transition-all"
                     style={{ border: '2px dashed rgba(15,23,42,0.12)', color: '#8A94A2' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'oklch(0.52 0.16 255)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#1447E6'; e.currentTarget.style.color = '#1447E6'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(15,23,42,0.12)'; e.currentTarget.style.color = '#8A94A2'; e.currentTarget.style.background = 'transparent'; }}>
               <ImagePlus size={16} /> Clique para enviar a foto
             </button>
@@ -569,7 +569,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
             <button type="button" onClick={() => avatarRef.current?.click()}
                     className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm transition-all"
                     style={{ border: '2px dashed rgba(15,23,42,0.12)', color: '#8A94A2' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'oklch(0.52 0.16 255)'; e.currentTarget.style.color = 'oklch(0.52 0.16 255)'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#1447E6'; e.currentTarget.style.color = '#1447E6'; e.currentTarget.style.background = 'rgba(82,130,255,0.04)'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(15,23,42,0.12)'; e.currentTarget.style.color = '#8A94A2'; e.currentTarget.style.background = 'transparent'; }}>
               <ImagePlus size={16} /> Clique para enviar a foto
             </button>
@@ -610,7 +610,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
           </div>
           <button type="button" onClick={() => set('isActive', !form.isActive)}
                   className="w-11 h-6 rounded-full transition-colors flex-shrink-0 relative"
-                  style={{ background: form.isActive ? 'oklch(0.52 0.16 255)' : 'rgba(15,23,42,0.15)' }}>
+                  style={{ background: form.isActive ? '#1447E6' : 'rgba(15,23,42,0.15)' }}>
             <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
                   style={{ left: form.isActive ? '22px' : '2px' }} />
           </button>
@@ -633,7 +633,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
                 placeholder="Nova senha (mín. 6 caracteres)"
                 className="w-full px-3.5 py-2.5 pr-10 rounded-lg text-sm outline-none"
                 style={iStyle}
-                onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')}
+                onFocus={e => (e.target.style.borderColor = '#1447E6')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')}
               />
               <button type="button" onClick={() => setShowNewPwd(v => !v)}
@@ -657,7 +657,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
                 }
               }}
               className="px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-opacity flex-shrink-0"
-              style={{ background: 'oklch(0.52 0.16 255)', color: '#fff', opacity: (pwdLoading || newPassword.length < 6) ? 0.5 : 1 }}>
+              style={{ background: '#1447E6', color: '#fff', opacity: (pwdLoading || newPassword.length < 6) ? 0.5 : 1 }}>
               {pwdLoading ? <Loader2 size={13} className="animate-spin" /> : null}
               {pwdLoading ? 'Salvando…' : 'Definir'}
             </button>
@@ -768,7 +768,7 @@ function PinSection({ userId }: { userId: string }) {
 const iStyle: React.CSSProperties = { background: 'white', border: '1px solid rgba(15,23,42,0.12)', color: '#0B1220', transition: 'border-color 0.15s' };
 function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={`w-full px-3.5 py-2.5 rounded-lg text-sm outline-none ${className}`} style={iStyle}
-    onFocus={e => (e.target.style.borderColor = 'oklch(0.52 0.16 255)')} onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')} />;
+    onFocus={e => (e.target.style.borderColor = '#1447E6')} onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')} />;
 }
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return <div className="flex flex-col gap-1.5"><label className="text-xs font-semibold font-mono-jet" style={{ color: '#8A94A2', letterSpacing: '0.06em' }}>{label}{required && <span style={{ color: '#dc2626' }}> *</span>}</label>{children}</div>;
@@ -790,7 +790,7 @@ function ModalActions({ onClose, loading, label }: { onClose: () => void; loadin
   return (
     <div className="flex gap-3 pt-1">
       <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>Cancelar</button>
-      <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: 'oklch(0.52 0.16 255)', opacity: loading ? 0.7 : 1 }}>
+      <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2" style={{ background: '#1447E6', opacity: loading ? 0.7 : 1 }}>
         {loading && <Loader2 size={14} className="animate-spin" />}{loading ? 'Salvando…' : label}
       </button>
     </div>

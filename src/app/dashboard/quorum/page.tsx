@@ -136,7 +136,7 @@ export default function QuorumPage() {
       {!myPresenceConfirmed && (
         <button onClick={confirmMyPresence} disabled={confirming}
                 className="w-full py-3 rounded-xl font-semibold text-sm text-white mb-6 flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-                style={{ background: 'oklch(0.52 0.16 255)', opacity: confirming ? 0.7 : 1 }}>
+                style={{ background: '#1447E6', opacity: confirming ? 0.7 : 1 }}>
           {confirming ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
           Confirmar Minha Presença
         </button>
