@@ -67,7 +67,7 @@ export default function ExpedientePage() {
   const [convidadoTempo, setConvidadoTempo] = useState('5');
   const [convidadoTipo, setConvidadoTipo] = useState<'grande' | 'pequeno'>('grande');
 
-  const { expedienteAtivo, aparteAtivo, solicitacoes, inscritosVersion } = useExpediente(activeSession?.id ?? null);
+  const { expedienteAtivo, aparteAtivo, solicitacoes, inscritosVersion, inscricoesAbertas } = useExpediente(activeSession?.id ?? null);
 
   useNotificacoes({ sessionId: activeSession?.id ?? null, userId: user?.id });
 
@@ -122,6 +122,9 @@ export default function ExpedientePage() {
 
   const cortarFala = () =>
     act(() => api.post(`/expediente/sessions/${activeSession!.id}/cortar-fala`));
+
+  const toggleInscricoes = (tipo: 'grande' | 'pequeno', abrir: boolean) =>
+    act(() => api.post(`/expediente/sessions/${activeSession!.id}/inscricoes/${abrir ? 'abrir' : 'encerrar'}/${tipo}`));
 
   const solicitarAparte = () =>
     act(() => api.post(`/expediente/sessions/${activeSession!.id}/aparte/solicitar`));
@@ -327,11 +330,47 @@ export default function ExpedientePage() {
         </div>
       )}
 
+      {/* ── Controle de inscrições (presidente) ── */}
+      {isPresidente && (
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {(['grande', 'pequeno'] as const).map(tipo => {
+            const aberta = inscricoesAbertas[tipo];
+            return (
+              <div key={tipo} className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock size={15} style={{ color: aberta ? '#059669' : '#8A94A2' }} />
+                  <span className="text-sm font-semibold text-gray-800">{TIPO_LABEL[tipo]}</span>
+                  <span className="ml-auto text-[10px] font-mono-jet font-bold px-2 py-0.5 rounded"
+                        style={{ background: aberta ? '#ECFDF5' : '#F5F6F8', color: aberta ? '#059669' : '#8A94A2', border: `1px solid ${aberta ? '#A7F3D0' : '#E4E7ED'}` }}>
+                    {aberta ? 'ABERTAS' : 'FECHADAS'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-2">
+                  {aberta ? 'Vereadores podem se inscrever agora.' : 'Vereadores não podem se inscrever até você abrir.'}
+                </p>
+                <button onClick={() => toggleInscricoes(tipo, !aberta)} disabled={loading}
+                        className="w-full flex items-center justify-center gap-1.5 rounded-xl text-sm font-semibold"
+                        style={{
+                          padding: '10px 12px',
+                          background: aberta ? '#FEF2F2' : '#1447E6',
+                          color: aberta ? '#DC2626' : '#fff',
+                          border: aberta ? '1px solid #FECACA' : 'none',
+                          minHeight: 44,
+                        }}>
+                  {aberta ? <><MicOff size={14} /> Encerrar inscrições</> : <><Mic size={14} /> Abrir inscrições</>}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* ── Inscrição do vereador ── */}
       {isVereador && (
         <div className="grid grid-cols-2 gap-3 mb-6">
           {(['grande', 'pequeno'] as const).map(tipo => {
             const inscrito = !!minhaInscricao(tipo);
+            const aberta = inscricoesAbertas[tipo];
             return (
               <div key={tipo} className="rounded-xl p-4" style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)' }}>
                 <div className="flex items-center gap-2 mb-2">
@@ -346,6 +385,14 @@ export default function ExpedientePage() {
                             className="w-full flex items-center justify-center gap-1.5 rounded-xl text-sm font-medium"
                             style={{ padding: '10px 12px', background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', minHeight: 44 }}>
                       <MicOff size={14} /> Cancelar inscrição
+                    </button>
+                  </div>
+                ) : !aberta ? (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">Aguardando o presidente abrir as inscrições.</p>
+                    <button disabled className="w-full flex items-center justify-center gap-1.5 rounded-xl text-sm font-semibold"
+                            style={{ padding: '10px 12px', background: '#F5F6F8', color: '#8A94A2', minHeight: 44, cursor: 'not-allowed' }}>
+                      <Mic size={14} /> Inscrições fechadas
                     </button>
                   </div>
                 ) : (

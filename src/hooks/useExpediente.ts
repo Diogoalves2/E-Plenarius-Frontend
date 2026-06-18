@@ -34,12 +34,15 @@ export interface SolicitacaoAparte {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+export interface InscricoesAbertas { grande: boolean; pequeno: boolean; }
+
 export function useExpediente(sessionId: string | null) {
   const { socket, connected, on } = useSocket(sessionId);
   const [expedienteAtivo, setExpedienteAtivo] = useState<ExpedienteAtivo | null>(null);
   const [aparteAtivo, setAparteAtivo] = useState<AparteAtivo | null>(null);
   const [solicitacoes, setSolicitacoes] = useState<SolicitacaoAparte[]>([]);
   const [inscritosVersion, setInscritosVersion] = useState(0);
+  const [inscricoesAbertas, setInscricoesAbertas] = useState<InscricoesAbertas>({ grande: false, pequeno: false });
 
   // Fetch state from API on socket connect (handles reconnections)
   const syncEstado = useCallback(async () => {
@@ -48,7 +51,10 @@ export function useExpediente(sessionId: string | null) {
       const res = await fetch(`${API_BASE}/expediente/sessions/${sessionId}/ativo`);
       if (!res.ok) return;
       const data = await res.json();
-      if (!data) { setExpedienteAtivo(null); setAparteAtivo(null); setSolicitacoes([]); return; }
+      if (data?.inscricoesAbertas) setInscricoesAbertas(data.inscricoesAbertas);
+      if (!data || (!data.inscricaoId && !data.vereador)) {
+        setExpedienteAtivo(null); setAparteAtivo(null); setSolicitacoes([]); return;
+      }
       setExpedienteAtivo({
         inscricaoId: data.inscricaoId,
         tipo: data.tipo,
@@ -125,6 +131,10 @@ export function useExpediente(sessionId: string | null) {
       setInscritosVersion(v => v + 1);
     });
 
+    const offInscricoesStatus = on('expediente:inscricoes_status', ({ tipo, aberta }: { tipo: 'grande' | 'pequeno'; aberta: boolean }) => {
+      setInscricoesAbertas(prev => ({ ...prev, [tipo]: aberta }));
+    });
+
     return () => {
       socket.off('connect', syncEstado);
       offIniciado();
@@ -137,11 +147,12 @@ export function useExpediente(sessionId: string | null) {
       offAparteTick();
       offAparteEncerrado();
       offInscricaoAtualizada();
+      offInscricoesStatus();
     };
   }, [socket, on, syncEstado]);
 
   // Initial sync on mount
   useEffect(() => { syncEstado(); }, [syncEstado]);
 
-  return { expedienteAtivo, aparteAtivo, solicitacoes, connected, inscritosVersion };
+  return { expedienteAtivo, aparteAtivo, solicitacoes, connected, inscritosVersion, inscricoesAbertas };
 }
