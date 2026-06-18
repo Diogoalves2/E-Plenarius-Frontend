@@ -7,7 +7,7 @@ import { useNotificacoes } from '@/hooks/useNotificacoes';
 import api from '@/lib/api';
 import {
   Mic, MicOff, Clock, Plus, Minus, Square, CheckCircle,
-  UserCircle, Hand, StopCircle, UserPlus, X,
+  UserCircle, Hand, StopCircle, UserPlus, X, VolumeX,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -119,6 +119,9 @@ export default function ExpedientePage() {
 
   const encerrar = () =>
     act(() => api.post(`/expediente/sessions/${activeSession!.id}/encerrar`));
+
+  const cortarFala = () =>
+    act(() => api.post(`/expediente/sessions/${activeSession!.id}/cortar-fala`));
 
   const solicitarAparte = () =>
     act(() => api.post(`/expediente/sessions/${activeSession!.id}/aparte/solicitar`));
@@ -238,8 +241,14 @@ export default function ExpedientePage() {
                           style={{ padding: '10px 16px', background: 'rgba(255,255,255,0.08)', color: 'oklch(0.75 0.14 255)', minHeight: 44 }}>
                     <Plus size={15} /> 1 min
                   </button>
-                  <button onClick={() => setConfirmEncerrar(true)}
+                  <button onClick={cortarFala}
+                          title="Muta o microfone do orador na mesa de som"
                           className="flex items-center gap-1.5 rounded-xl text-sm font-semibold ml-auto"
+                          style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)', minHeight: 44 }}>
+                    <VolumeX size={15} /> Cortar fala
+                  </button>
+                  <button onClick={() => setConfirmEncerrar(true)}
+                          className="flex items-center gap-1.5 rounded-xl text-sm font-semibold"
                           style={{ padding: '10px 16px', background: 'rgba(239,68,68,0.2)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', minHeight: 44 }}>
                     <Square size={15} /> Encerrar
                   </button>

@@ -671,8 +671,72 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
         </div>
 
         <PinSection userId={vereador.id} />
+        <AudioChannelSection userId={vereador.id} initialChannel={(vereador as any).audioChannel ?? null} />
       </div>
     </Modal>
+  );
+}
+
+/* ── Canal de áudio (mesa Soundcraft) ─────────────────────────── */
+
+function AudioChannelSection({ userId, initialChannel }: { userId: string; initialChannel: number | null }) {
+  const [channel, setChannel] = useState<string>(initialChannel != null ? String(initialChannel) : '');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+
+  async function save() {
+    setError(''); setSuccess(false);
+    const n = channel.trim() === '' ? null : Number(channel);
+    if (n !== null && (!Number.isInteger(n) || n < 1 || n > 32)) {
+      setError('Canal deve ser inteiro entre 1 e 32.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.patch(`/users/${userId}/audio-channel`, { channel: n });
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao salvar canal');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="pt-4 mt-4" style={{ borderTop: '1px solid rgba(15,23,42,0.08)' }}>
+      <p className="font-mono-jet text-[10px] font-semibold mb-1" style={{ color: '#8A94A2', letterSpacing: '0.08em' }}>CANAL NA MESA DE SOM</p>
+      <p className="text-xs mb-3" style={{ color: '#8A94A2' }}>
+        Número do canal do microfone deste vereador na mesa Soundcraft (1-32). Usado para cortar o som automaticamente.
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="number" min={1} max={32}
+          value={channel}
+          onChange={e => { setChannel(e.target.value.replace(/\D/g, '').slice(0, 2)); setSuccess(false); setError(''); }}
+          placeholder="Ex: 5"
+          className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
+          style={iStyle}
+          onFocus={e => (e.target.style.borderColor = '#1447E6')}
+          onBlur={e => (e.target.style.borderColor = 'rgba(15,23,42,0.12)')}
+        />
+        <button
+          type="button"
+          disabled={loading}
+          onClick={save}
+          className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center gap-1.5 flex-shrink-0"
+          style={{ background: '#1447E6', opacity: loading ? 0.5 : 1 }}>
+          {loading ? <Loader2 size={13} className="animate-spin" /> : null}
+          Salvar
+        </button>
+      </div>
+      {success && (
+        <p className="text-xs mt-2 flex items-center gap-1.5" style={{ color: '#059669' }}>
+          <Check size={12} /> Canal salvo.
+        </p>
+      )}
+      {error && <p className="text-xs mt-2" style={{ color: '#dc2626' }}>{error}</p>}
+    </div>
   );
 }
 
