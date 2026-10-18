@@ -4,24 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FileText, Plus, X, Loader2, AlertCircle, Paperclip, Trash2, ExternalLink } from 'lucide-react';
 import api from '@/lib/api';
+import { TIPOS_PROJETO, MAJORITY_LABEL, MAJORITY_HELP, requiredVotes, useChamberRules, type Majority } from '@/lib/legislativo';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
-const TIPOS_PROJETO = [
-  'Projeto de Emenda à Lei Orgânica',
-  'Projeto de Lei Complementar',
-  'Projeto de Lei',
-  'Projeto de Decreto Legislativo',
-  'Projeto de Resolução',
-  'Indicação',
-  'Requerimento',
-  'Pedido de Informação',
-  'Recurso',
-  'Emenda',
-  'Subemenda',
-  'Substitutivo',
-  'Ata',
-] as const;
 
 interface AgendaItem {
   id: string;
@@ -32,6 +18,7 @@ interface AgendaItem {
   authorName: string;
   votingType: 'aberta' | 'secreta';
   quorumMinimum: number;
+  majority?: Majority;
   orderIndex: number;
   status: 'pendente' | 'em_votacao' | 'aprovado' | 'rejeitado' | 'retirado';
   votesYes: number;
@@ -163,6 +150,7 @@ export default function PautaPage() {
                 <span className="text-xs font-mono-jet font-semibold px-2 py-0.5 rounded w-fit"
                       style={{ background: item.votingType === 'secreta' ? 'rgba(139,92,246,0.1)' : 'rgba(82,130,255,0.08)', color: item.votingType === 'secreta' ? '#6d28d9' : '#1447E6' }}>
                   {item.votingType === 'secreta' ? 'SECRETA' : 'ABERTA'}
+                  {item.majority && item.majority !== 'simples' ? ` · ${MAJORITY_LABEL[item.majority].toUpperCase()}` : ''}
                 </span>
                 {/* Status */}
                 <span className="text-xs px-2.5 py-1 rounded-full font-semibold font-mono-jet w-fit"
@@ -188,8 +176,20 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
 }) {
   const [form, setForm] = useState({
     number: '', type: 'Projeto de Lei', title: '', description: '',
-    authorName: '', votingType: 'aberta', quorumMinimum: '5',
+    authorName: '', votingType: 'aberta', quorumMinimum: '', majority: '' as Majority | '',
   });
+  const { rules } = useChamberRules(chamberId);
+  // Defaults do regimento: quórum padrão e maioria pelo tipo de matéria.
+  const autoMajority = (type: string): Majority => rules?.majorityByType?.[type] ?? 'simples';
+  useEffect(() => {
+    if (!rules) return;
+    setForm(f => ({
+      ...f,
+      quorumMinimum: f.quorumMinimum || String(rules.defaultQuorum),
+      majority: f.majority || autoMajority(f.type),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rules]);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -229,7 +229,8 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
         description: form.description || undefined,
         authorName: form.authorName,
         votingType: form.votingType,
-        quorumMinimum: Number(form.quorumMinimum),
+        quorumMinimum: Number(form.quorumMinimum) || rules?.defaultQuorum || 1,
+        majority: form.majority || autoMajority(form.type),
         ...(pdfUrl ? { pdfUrl } : {}),
       });
       onCreated();
@@ -244,7 +245,7 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
     <Modal title="Novo Item de Pauta" onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="TIPO DE MATÉRIA" required>
-          <select value={form.type} onChange={e => set('type', e.target.value)}
+          <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value, majority: autoMajority(e.target.value) }))}
                   className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
             {TIPOS_PROJETO.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
@@ -313,10 +314,21 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
               <option value="secreta">Secreta</option>
             </select>
           </Field>
-          <Field label="QUÓRUM MÍNIMO" required>
+          <Field label="QUÓRUM MÍNIMO (PRESENTES)" required>
             <Input type="number" min="1" value={form.quorumMinimum} onChange={e => set('quorumMinimum', e.target.value)} required />
           </Field>
         </div>
+        <Field label="MAIORIA PARA APROVAR" required>
+          <select value={form.majority || 'simples'} onChange={e => set('majority', e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
+            {(Object.keys(MAJORITY_LABEL) as Majority[]).map(m => <option key={m} value={m}>{MAJORITY_LABEL[m]}</option>)}
+          </select>
+          <p className="text-xs mt-1.5" style={{ color: '#8A94A2' }}>
+            {MAJORITY_HELP[(form.majority || 'simples') as Majority]}
+            {rules && requiredVotes((form.majority || 'simples') as Majority, rules.seats) != null &&
+              ` Com ${rules.seats} cadeiras: ${requiredVotes(form.majority as Majority, rules.seats)} votos SIM.`}
+          </p>
+        </Field>
 
         {/* PDF upload */}
         <Field label="DOCUMENTO PDF">

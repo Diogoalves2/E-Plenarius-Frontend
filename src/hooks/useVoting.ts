@@ -24,6 +24,9 @@ interface AgendaItem {
   countsHidden?: boolean;
   /** Hash do resultado (itens encerrados). */
   resultHash?: string | null;
+  majority?: 'simples' | 'absoluta' | 'dois_tercos';
+  requiredVotes?: number | null;
+  resultExplanation?: string | null;
   votingOpenedAt?: string;
   votingClosedAt?: string;
 }

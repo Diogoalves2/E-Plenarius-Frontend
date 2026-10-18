@@ -7,6 +7,7 @@ import { useVoting } from '@/hooks/useVoting';
 import api from '@/lib/api';
 import { CheckCircle2, Clock, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { SecretTally } from '@/components/voting/SecretTally';
+import { useChamberRules } from '@/lib/legislativo';
 
 export default function VotarPage() {
   const { user } = useAuth();
@@ -16,6 +17,9 @@ export default function VotarPage() {
   const [voteHash, setVoteHash] = useState<string | null>(null);
   const [voting, setVoting] = useState(false);
   const [voteError, setVoteError] = useState('');
+  const [pinFor, setPinFor] = useState<'sim' | 'nao' | 'abstencao' | null>(null);
+  const [pin, setPin] = useState('');
+  const { rules } = useChamberRules(user?.chamberId);
 
   const { socket, connected } = useSocket(sessionId);
   const { activeItem, counts, countsHidden, totalVotes, voteLog } = useVoting(sessionId, socket);
@@ -52,22 +56,28 @@ export default function VotarPage() {
     }
   }, [voteLog, user?.id, activeItem?.id]);
 
-  const castVote = useCallback(async (choice: 'sim' | 'nao' | 'abstencao') => {
+  const castVote = useCallback(async (choice: 'sim' | 'nao' | 'abstencao', confirmPin?: string) => {
     if (!activeItem || voting || hasVoted) return;
+    // Câmara exige PIN: abre a confirmação antes de enviar.
+    if (rules?.requirePinToVote && !confirmPin) { setPin(''); setPinFor(choice); return; }
     setVoting(true);
     setVoteError('');
     try {
-      const res = await api.post('/voting/cast', { agendaItemId: activeItem.id, choice });
+      const res = await api.post('/voting/cast', { agendaItemId: activeItem.id, choice, ...(confirmPin ? { pin: confirmPin } : {}) });
+      setPinFor(null);
       const displayed = activeItem.votingType === 'secreta' ? 'secreta' : choice;
       setHasVoted(true);
       setMyChoice(displayed);
       setVoteHash(res.data.hash);
     } catch (e: any) {
-      setVoteError(e.response?.data?.message ?? 'Erro ao registrar voto. Tente novamente.');
+      const d = e.response?.data;
+      if (d?.code === 'PIN_REQUIRED') { setPin(''); setPinFor(choice); }
+      else if (d?.code === 'PIN_INVALID') { setPin(''); setVoteError('PIN incorreto.'); }
+      else { setPinFor(null); setVoteError(d?.message ?? 'Erro ao registrar voto. Tente novamente.'); }
     } finally {
       setVoting(false);
     }
-  }, [activeItem, voting, hasVoted]);
+  }, [activeItem, voting, hasVoted, rules?.requirePinToVote]);
 
   const total = totalVotes;
   const isOpen = activeItem?.status === 'em_votacao';
@@ -75,6 +85,30 @@ export default function VotarPage() {
 
   return (
     <div className="flex flex-col min-h-full" style={{ background: '#F6F7F9' }}>
+      {pinFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(11,18,32,0.55)' }}>
+          <form className="bg-white rounded-2xl p-6 w-full max-w-sm"
+                onSubmit={e => { e.preventDefault(); if (/^\d{6}$/.test(pin)) castVote(pinFor, pin); }}>
+            <p className="font-semibold text-lg" style={{ color: '#0B1220' }}>Confirmar voto: {pinFor === 'sim' ? 'SIM' : pinFor === 'nao' ? 'NÃO' : 'ABSTENÇÃO'}</p>
+            <p className="text-sm mt-1 mb-4" style={{ color: '#8A94A2' }}>Digite seu PIN de 6 dígitos.</p>
+            <input autoFocus type="password" inputMode="numeric" maxLength={6} value={pin}
+                   onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                   className="w-full px-3.5 py-3 rounded-lg text-center text-xl tracking-[0.5em] outline-none font-mono-jet"
+                   style={{ border: '1px solid rgba(15,23,42,0.15)' }} />
+            {voteError && <p className="text-sm mt-2" style={{ color: '#dc2626' }}>{voteError}</p>}
+            <div className="flex gap-2 mt-4">
+              <button type="button" onClick={() => { setPinFor(null); setVoteError(''); }}
+                      className="flex-1 py-2.5 rounded-lg text-sm font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>
+                Cancelar
+              </button>
+              <button type="submit" disabled={pin.length !== 6 || voting}
+                      className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white" style={{ background: '#1447E6', opacity: pin.length !== 6 || voting ? 0.5 : 1 }}>
+                {voting ? 'Enviando…' : 'Confirmar'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Barra de status */}
       <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0"
@@ -248,6 +282,9 @@ export default function VotarPage() {
                           }}>
                       {activeItem.status === 'aprovado' ? '✓ APROVADO' : '✗ REPROVADO'}
                     </span>
+                    {activeItem.resultExplanation && (
+                      <p className="text-xs mt-2" style={{ color: '#4B5563' }}>{activeItem.resultExplanation}</p>
+                    )}
                   </div>
                 )}
               </div>

@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { SecretTally } from '@/components/voting/SecretTally';
+import { PhaseBar } from '@/components/session/PhaseBar';
+import { MAJORITY_LABEL, requiredVotes, useChamberRules } from '@/lib/legislativo';
+import Link from 'next/link';
 
 const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api\/?$/, '');
 
@@ -27,6 +30,8 @@ export default function VotacaoAoVivoPage() {
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [presentes, setPresentes] = useState(0);
   const [timer, setTimer] = useState(0);
+  const [actionError, setActionError] = useState<{ message: string; tie?: boolean } | null>(null);
+  const { rules } = useChamberRules(user?.chamberId);
 
   const { socket, connected } = useSocket(sessionId);
   const { agenda, activeItem, counts, countsHidden, totalVotes, voteLog, loading, openVoting, closeVoting } = useVoting(sessionId, socket);
@@ -86,6 +91,15 @@ export default function VotacaoAoVivoPage() {
   const totalVotos = totalVotes;
   const isPresidente = user?.role === 'presidente';
 
+  async function runAction(fn: () => Promise<unknown>) {
+    setActionError(null);
+    try { await fn(); }
+    catch (e: any) {
+      const d = e.response?.data;
+      setActionError({ message: d?.message ?? 'Erro ao executar a ação', tie: d?.code === 'TIE_NEEDS_PRESIDENT' });
+    }
+  }
+
   return (
     <div className="p-6 flex flex-col gap-5 min-h-full" style={{ background: '#F6F7F9' }}>
       {/* Breadcrumb */}
@@ -106,6 +120,9 @@ export default function VotacaoAoVivoPage() {
         <NoSessionCard />
       ) : (
         <>
+          {user?.chamberId && (
+            <PhaseBar sessionId={sessionId} chamberId={user.chamberId} socket={socket} canControl={isPresidente} />
+          )}
           {/* Hero card — item em votação */}
           <div className="rounded-2xl p-6 relative overflow-hidden"
                style={{ background: '#fff', border: '1px solid rgba(15,23,42,0.08)' }}>
@@ -124,6 +141,12 @@ export default function VotacaoAoVivoPage() {
                       <Chip icon={activeItem.votingType === 'secreta' ? <EyeOff size={10} /> : <Eye size={10} />}>
                         {activeItem.votingType === 'secreta' ? 'Secreta' : 'Aberta'}
                       </Chip>
+                      {activeItem.majority && activeItem.majority !== 'simples' && (
+                        <Chip>
+                          {MAJORITY_LABEL[activeItem.majority]}
+                          {rules ? ` · ${requiredVotes(activeItem.majority, rules.seats)} votos SIM` : ''}
+                        </Chip>
+                      )}
                     </>
                   )}
                 </div>
@@ -167,7 +190,7 @@ export default function VotacaoAoVivoPage() {
                       <button
                         onClick={() => {
                           const next = agenda.find(i => i.status === 'pendente');
-                          if (next) openVoting(next.id);
+                          if (next) runAction(() => openVoting(next.id));
                         }}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
                         style={{ background: '#1447E6' }}>
@@ -176,7 +199,7 @@ export default function VotacaoAoVivoPage() {
                     )}
                     {activeItem?.status === 'em_votacao' && (
                       <button
-                        onClick={() => closeVoting(activeItem.id)}
+                        onClick={() => runAction(() => closeVoting(activeItem.id))}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold text-white"
                         style={{ background: 'oklch(0.52 0.20 25)' }}>
                         <Square size={13} /> Encerrar
@@ -187,6 +210,20 @@ export default function VotacaoAoVivoPage() {
               </div>
             </div>
           </div>
+
+          {actionError && (
+            <div className="rounded-xl px-4 py-3 text-sm flex flex-wrap items-center gap-3"
+                 style={{ background: actionError.tie ? 'rgba(245,158,11,0.10)' : 'rgba(239,68,68,0.08)',
+                          color: actionError.tie ? '#92400e' : '#dc2626',
+                          border: `1px solid ${actionError.tie ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.2)'}` }}>
+              <span className="font-semibold">{actionError.message}</span>
+              {actionError.tie && (
+                <Link href="/dashboard/votar" className="px-3 py-1.5 rounded-lg text-white text-xs font-semibold" style={{ background: '#1447E6' }}>
+                  Votar para desempatar
+                </Link>
+              )}
+            </div>
+          )}
 
           {/* Grid: plenário + resultado + auditoria */}
           <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1fr_300px]">

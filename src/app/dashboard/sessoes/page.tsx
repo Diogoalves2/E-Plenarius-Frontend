@@ -5,24 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Clock, Plus, Play, Square, X, Loader2, CalendarDays, Paperclip, Trash2, FileText } from 'lucide-react';
 import api from '@/lib/api';
 import { fullSessionTitle, ChamberBienio } from '@/lib/sessionTitle';
+import { TIPOS_PROJETO, useChamberRules } from '@/lib/legislativo';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
-const TIPOS_PROJETO = [
-  'Projeto de Emenda à Lei Orgânica',
-  'Projeto de Lei Complementar',
-  'Projeto de Lei',
-  'Projeto de Decreto Legislativo',
-  'Projeto de Resolução',
-  'Indicação',
-  'Requerimento',
-  'Pedido de Informação',
-  'Recurso',
-  'Emenda',
-  'Subemenda',
-  'Substitutivo',
-  'Ata',
-] as const;
 
 interface Session {
   id: string;
@@ -187,13 +173,14 @@ interface DraftItem {
 }
 
 function emptyDraft(): DraftItem {
-  return { _key: Math.random().toString(36).slice(2), type: 'Projeto de Lei', number: '', title: '', authorName: '', votingType: 'aberta', quorumMinimum: '5', pdfUrl: '', pdfUploading: false };
+  return { _key: Math.random().toString(36).slice(2), type: 'Projeto de Lei', number: '', title: '', authorName: '', votingType: 'aberta', quorumMinimum: '', pdfUrl: '', pdfUploading: false };
 }
 
 interface VereadorOption { id: string; name: string; party?: string | null; role: string; }
 
 function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId: string; chamber?: ChamberBienio | null; onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ number: '', type: 'ordinaria', scheduledAt: '' });
+  const { rules } = useChamberRules(chamberId);
   const [items, setItems] = useState<DraftItem[]>([]);
   const [draft, setDraft] = useState<DraftItem | null>(null);
   const [loading, setLoading] = useState(false);
@@ -218,7 +205,7 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
       const { data: session } = await api.post('/sessions', payload);
       for (let i = 0; i < items.length; i++) {
         const it = items[i];
-        const itemPayload: any = { sessionId: session.id, chamberId, number: it.number, type: it.type, title: it.title, authorName: it.authorName, votingType: it.votingType, quorumMinimum: Number(it.quorumMinimum), orderIndex: i };
+        const itemPayload: any = { sessionId: session.id, chamberId, number: it.number, type: it.type, title: it.title, authorName: it.authorName, votingType: it.votingType, quorumMinimum: Number(it.quorumMinimum) || rules?.defaultQuorum || 1, orderIndex: i };
         if (it.pdfUrl) itemPayload.pdfUrl = it.pdfUrl;
         await api.post('/agenda', itemPayload);
       }
@@ -380,7 +367,7 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
                   </div>
                 </Field>
                 <Field label="QUÓRUM MÍNIMO" required>
-                  <Input type="number" min="1" value={draft.quorumMinimum} onChange={e => setDraft(d => d ? { ...d, quorumMinimum: e.target.value } : d)} placeholder="5" />
+                  <Input type="number" min="1" value={draft.quorumMinimum} onChange={e => setDraft(d => d ? { ...d, quorumMinimum: e.target.value } : d)} placeholder={rules ? String(rules.defaultQuorum) : ''} />
                 </Field>
               </div>
               <Field label="PDF DO PROJETO">

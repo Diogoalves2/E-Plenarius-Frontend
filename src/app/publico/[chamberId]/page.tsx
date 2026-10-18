@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Calendar, ChevronRight, Loader2, Radio } from 'lucide-react';
 import Link from 'next/link';
+import { PublicNav } from '@/components/public/PublicShell';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -69,6 +70,8 @@ export default function PublicoPage() {
           )}
         </div>
       </div>
+
+      <PublicNav chamberId={chamberId} active="sessoes" />
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 40px' }}>
 

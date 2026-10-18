@@ -9,6 +9,7 @@ import { useExpediente, ExpedienteAtivo, AparteAtivo } from '@/hooks/useExpedien
 import { Video, Volume2 } from 'lucide-react';
 import { fullSessionTitle } from '@/lib/sessionTitle';
 import { SecretTally } from '@/components/voting/SecretTally';
+import { DEFAULT_PHASES, type SessionPhase } from '@/lib/legislativo';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const MEDIA = API.replace(/\/api\/?$/, '');
@@ -16,8 +17,8 @@ const MEDIA = API.replace(/\/api\/?$/, '');
 interface VereadorPresente {
   id: string; name: string; initials: string; avatarUrl: string | null; party: string | null; role: string;
 }
-interface SessionInfo { id: string; number: number; type: string; date: string; chamberId: string; startedAt?: string | null; youtubeUrl?: string | null; youtubeThumbnailUrl?: string | null; }
-interface ChamberInfo { id: string; name: string; city: string; state: string; logoUrl?: string | null; bienioInicio?: number | null; bienioFim?: number | null; anoBienio?: number | null; }
+interface SessionInfo { id: string; number: number; type: string; date: string; chamberId: string; phase?: string | null; startedAt?: string | null; youtubeUrl?: string | null; youtubeThumbnailUrl?: string | null; }
+interface ChamberInfo { id: string; name: string; city: string; state: string; logoUrl?: string | null; bienioInicio?: number | null; bienioFim?: number | null; anoBienio?: number | null; sessionPhases?: SessionPhase[] | null; }
 
 export default function TelaoPage() {
   const [mounted, setMounted] = useState(false);
@@ -53,6 +54,19 @@ export default function TelaoPage() {
   }, [sessionId]);
 
   const { socket, connected } = useSocket(sessionId);
+
+  // Fase do roteiro (presidente avança no painel → evento session:phase)
+  const [phase, setPhase] = useState<string | null>(null);
+  useEffect(() => { setPhase(sessionInfo?.phase ?? null); }, [sessionInfo?.phase]);
+  useEffect(() => {
+    if (!socket) return;
+    const onPhase = (d: { phase: string | null }) => setPhase(d.phase);
+    socket.on('session:phase', onPhase);
+    return () => { socket.off('session:phase', onPhase); };
+  }, [socket]);
+  const phaseLabel = phase
+    ? ((chamberInfo?.sessionPhases?.length ? chamberInfo.sessionPhases : DEFAULT_PHASES).find(p => p.key === phase)?.label ?? null)
+    : null;
   const { activeItem, counts, countsHidden, totalVotes, voteLog } = useVoting(sessionId, socket);
   const { expedienteAtivo, aparteAtivo } = useExpediente(sessionId);
   const { needsActivation: soundNeedsActivation, activate: activateSound } = useVotingSounds(socket);
@@ -264,6 +278,9 @@ export default function TelaoPage() {
                 <>
                   <span style={{ color: '#3B4451' }}>·</span>
                   <span>Iniciada às {new Date(sessionInfo.startedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  {phaseLabel && (
+                    <span className="px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(20,71,230,0.18)', color: '#9DB7FF' }}>{phaseLabel}</span>
+                  )}
                 </>
               )}
             </div>
