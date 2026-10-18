@@ -159,7 +159,7 @@ export default function QuorumPage() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate" style={{ color: '#0B1220' }}>{v.name}</p>
                 <p className="text-xs mt-0.5 truncate" style={{ color: '#8A94A2' }}>
-                  {v.party}{v.party && v.role ? ' · ' : ''}{v.role === 'presidente' ? 'Presidente' : v.role === 'secretaria' ? 'Secretaria' : 'Vereador'}
+                  {v.party}{v.party && v.role ? ' · ' : ''}{v.role === 'presidente' ? 'Presidente' : v.role === 'vice_presidente' ? 'Vice-presidente' : v.role === 'secretaria' ? 'Secretaria' : 'Vereador'}
                 </p>
               </div>
               <span className="text-[10px] font-mono-jet font-semibold px-1.5 py-0.5 rounded flex-shrink-0"

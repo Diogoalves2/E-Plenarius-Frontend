@@ -10,6 +10,7 @@ import {
   UserCircle, Hand, StopCircle, UserPlus, X, VolumeX,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { canConductSession } from '@/lib/auth';
 
 interface ActiveSession { id: string; number: number; type: string; }
 
@@ -71,8 +72,8 @@ export default function ExpedientePage() {
 
   useNotificacoes({ sessionId: activeSession?.id ?? null, userId: user?.id });
 
-  const isPresidente = user?.role === 'presidente';
-  const isVereador = user?.role === 'vereador';
+  const isPresidente = canConductSession(user?.role);
+  const isVereador = user?.role === 'vereador' || user?.role === 'vice_presidente';
 
   const fetchSession = useCallback(async () => {
     if (!user?.chamberId) return;

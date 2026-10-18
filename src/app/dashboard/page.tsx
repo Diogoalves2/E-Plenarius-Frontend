@@ -13,6 +13,7 @@ import { SecretTally } from '@/components/voting/SecretTally';
 import { PhaseBar } from '@/components/session/PhaseBar';
 import { MAJORITY_LABEL, requiredVotes, useChamberRules } from '@/lib/legislativo';
 import Link from 'next/link';
+import { canConductSession } from '@/lib/auth';
 
 const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api\/?$/, '');
 
@@ -89,7 +90,7 @@ export default function VotacaoAoVivoPage() {
   const mm = String(Math.floor(timer / 60)).padStart(2, '0');
   const ss = String(timer % 60).padStart(2, '0');
   const totalVotos = totalVotes;
-  const isPresidente = user?.role === 'presidente';
+  const isPresidente = canConductSession(user?.role);
 
   async function runAction(fn: () => Promise<unknown>) {
     setActionError(null);

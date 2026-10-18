@@ -39,7 +39,7 @@ export default function VereadoresPublicoPage() {
                   : <div className="rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ width: 40, height: 40, background: '#1447E6' }}>{m.initials}</div>}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold truncate" style={{ color: '#0B1220' }}>{m.name}</p>
-                  <p className="text-xs" style={{ color: '#8A94A2' }}>{[m.party, m.role === 'presidente' ? 'Presidente' : m.title].filter(Boolean).join(' · ')}</p>
+                  <p className="text-xs" style={{ color: '#8A94A2' }}>{[m.party, m.role === 'presidente' ? 'Presidente' : m.role === 'vice_presidente' ? 'Vice-presidente' : m.title].filter(Boolean).join(' · ')}</p>
                 </div>
                 <div className="text-right flex-shrink-0" style={{ minWidth: 110 }}>
                   <p className="text-sm font-bold" style={{ color: '#0B1220' }}>{m.taxaPresenca == null ? '—' : `${m.taxaPresenca}%`}</p>

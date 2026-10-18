@@ -49,7 +49,7 @@ export function Topbar({ onMenuToggle }: { onMenuToggle: () => void }) {
               </span>
               <span className="text-[10px] font-mono-jet font-bold px-1.5 py-0.5 rounded flex-shrink-0"
                     style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}>
-                {user.role === 'presidente' ? 'PRES' : user.role === 'vereador' ? 'VER' : 'SEC'}
+                {user.role === 'presidente' ? 'PRES' : user.role === 'vice_presidente' ? 'VICE' : user.role === 'vereador' ? 'VER' : 'SEC'}
               </span>
             </div>
             <p className="text-[11px] truncate" style={{ color: '#8A94A2' }}>

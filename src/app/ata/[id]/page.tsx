@@ -73,7 +73,7 @@ async function exportDocx(ata: Ata) {
     P(`Sessão iniciada em ${fmt(s.startedAt)} e encerrada em ${fmt(s.endedAt)}.`),
     ...ata.roteiro.map(r => P(`${hm(r.at)} — ${r.evento}`)),
     H(`2. PRESENÇA (${ata.presentes.length} presentes de ${c.cadeiras} cadeiras)`),
-    ...ata.presentes.map((p, i) => P(`${i + 1}. ${p.name}${p.party ? ` (${p.party})` : ''}${p.role === 'presidente' ? ' — Presidente' : ''} — ${hm(p.confirmedAt)}`)),
+    ...ata.presentes.map((p, i) => P(`${i + 1}. ${p.name}${p.party ? ` (${p.party})` : ''}${p.role === 'presidente' ? ' — Presidente' : p.role === 'vice_presidente' ? ' — Vice-presidente' : ''} — ${hm(p.confirmedAt)}`)),
     ...(ata.ausentes.length ? [P(`Ausentes: ${ata.ausentes.map(a => a.name).join(', ')}.`, { italics: true })] : []),
     H('3. EXPEDIENTE'),
     ...(ata.falas.length ? ata.falas.map(f => P(`${hm(f.at)} — ${falaText(f)}`)) : [P('Não houve oradores inscritos.', { italics: true })]),
@@ -178,7 +178,7 @@ export default function AtaPage() {
             <ol style={{ margin: 0, padding: '0 0 0 18px', fontSize: 13, lineHeight: 1.9 }}>
               {ata.presentes.map((p, i) => (
                 <li key={i}>
-                  <strong>{p.name}</strong>{p.party ? ` (${p.party})` : ''}{p.role === 'presidente' ? ' — Presidente' : ''}
+                  <strong>{p.name}</strong>{p.party ? ` (${p.party})` : ''}{p.role === 'presidente' ? ' — Presidente' : p.role === 'vice_presidente' ? ' — Vice-presidente' : ''}
                   <span style={{ color: '#94a3b8' }}> · {hm(p.confirmedAt)}</span>
                 </li>
               ))}

@@ -37,7 +37,7 @@ export default function PerfilVereadorPage() {
               : <div className="rounded-full flex items-center justify-center text-xl font-bold text-white" style={{ width: 64, height: 64, background: '#1447E6' }}>{p.initials}</div>}
             <div className="flex-1 min-w-0">
               <p className="text-lg font-bold" style={{ color: '#0B1220' }}>{p.name}</p>
-              <p className="text-sm" style={{ color: '#8A94A2' }}>{[p.party, p.role === 'presidente' ? 'Presidente da Câmara' : p.title].filter(Boolean).join(' · ')}</p>
+              <p className="text-sm" style={{ color: '#8A94A2' }}>{[p.party, p.role === 'presidente' ? 'Presidente da Câmara' : p.role === 'vice_presidente' ? 'Vice-presidente' : p.title].filter(Boolean).join(' · ')}</p>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold" style={{ color: '#1447E6' }}>{p.taxaPresenca == null ? '—' : `${p.taxaPresenca}%`}</p>

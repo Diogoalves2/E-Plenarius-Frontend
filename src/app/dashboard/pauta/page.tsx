@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FileText, Plus, X, Loader2, AlertCircle, Paperclip, Trash2, ExternalLink } from 'lucide-react';
 import api from '@/lib/api';
 import { TIPOS_PROJETO, MAJORITY_LABEL, MAJORITY_HELP, requiredVotes, useChamberRules, type Majority } from '@/lib/legislativo';
+import { MEMBER_ROLES } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
@@ -199,7 +200,7 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
 
   useEffect(() => {
     api.get(`/users/chamber/${chamberId}`).then(r => {
-      setVereadores(r.data.filter((u: VereadorOption) => ['vereador', 'presidente'].includes(u.role)));
+      setVereadores(r.data.filter((u: VereadorOption) => MEMBER_ROLES.includes(u.role)));
     }).catch(() => {});
   }, [chamberId]);
 

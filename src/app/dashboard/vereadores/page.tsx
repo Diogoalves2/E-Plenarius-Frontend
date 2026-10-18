@@ -24,14 +24,14 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'h
 
 const CARGOS = [
   { title: 'Presidente',       role: 'presidente' },
-  { title: 'Vice-presidente',  role: 'vereador'   },
+  { title: 'Vice-presidente',  role: 'vice_presidente' },
   { title: '1º Secretário(a)', role: 'secretaria' },
   { title: '2º Secretário(a)', role: 'secretaria' },
   { title: 'Vereador',         role: 'vereador'   },
 ] as const;
 
 function displayTitle(v: Vereador) {
-  return v.title ?? (v.role === 'presidente' ? 'Presidente' : v.role === 'secretaria' ? 'Secretaria' : 'Vereador');
+  return v.title ?? (v.role === 'presidente' ? 'Presidente' : v.role === 'vice_presidente' ? 'Vice-presidente' : v.role === 'secretaria' ? 'Secretaria' : 'Vereador');
 }
 
 const AVATAR_PALETTE = [
@@ -301,9 +301,10 @@ export default function VereadoresPage() {
               <p className="font-mono-jet text-[10px] font-semibold mb-2.5" style={{ color: '#8A94A2', letterSpacing: '0.08em' }}>PERMISSÕES</p>
               <div className="flex flex-col gap-2 mb-5">
                 {[
-                  { label: 'Votar em sessões',        allowed: ['presidente', 'vereador'].includes(selected.role) },
+                  { label: 'Votar em sessões',        allowed: ['presidente', 'vice_presidente', 'vereador'].includes(selected.role) },
                   { label: 'Cadastrar projetos',      allowed: selected.role === 'presidente' },
-                  { label: 'Abrir/encerrar votações', allowed: selected.role === 'presidente' },
+                  { label: 'Abrir/encerrar votações', allowed: ['presidente', 'vice_presidente'].includes(selected.role) },
+                  { label: 'Conduzir sessão (substituto)', allowed: selected.role === 'vice_presidente' },
                   { label: 'Acessar auditoria',       allowed: true },
                 ].map(p => (
                   <div key={p.label} className="flex items-center gap-2.5 text-sm" style={{ color: p.allowed ? '#0B1220' : '#8A94A2' }}>

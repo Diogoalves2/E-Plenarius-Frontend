@@ -65,6 +65,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
   }, [user?.chamberId]);
 
   const isPresidente = user?.role === 'presidente' || user?.role === 'superadmin';
+  const canConduct = isPresidente || user?.role === 'vice_presidente';
 
   // Tablets aguardando aprovação (badge no menu)
   useEffect(() => {
@@ -85,7 +86,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
         { href: '/dashboard/pauta',      icon: FileText, label: 'Ordem do dia',     badge: agendaCount !== null ? String(agendaCount) : undefined },
         { href: '/dashboard/quorum',     icon: Users,    label: 'Quórum',           badge: presenceCount ?? undefined },
         { href: '/dashboard/expediente', icon: Mic,      label: 'Expediente' },
-        ...(isPresidente ? [{ href: '/dashboard/transmissao', icon: Video, label: 'Transmissão' }] : []),
+        ...(canConduct ? [{ href: '/dashboard/transmissao', icon: Video, label: 'Transmissão' }] : []),
       ],
     },
     {
@@ -93,8 +94,8 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
       items: [
         { href: '/dashboard/projetos',     icon: Archive,   label: 'Projetos Votados' },
         { href: '/dashboard/regimento',    icon: BookOpen,  label: 'Regimento Interno' },
+        ...(canConduct ? [{ href: '/dashboard/sessoes', icon: Clock, label: 'Sessões' }] : []),
         ...(isPresidente ? [
-          { href: '/dashboard/sessoes',    icon: Clock,     label: 'Sessões' },
           { href: '/dashboard/vereadores', icon: Users,     label: 'Vereadores' },
           { href: '/dashboard/dispositivos', icon: Tablet,  label: 'Tablets', badge: pendingDevices ? String(pendingDevices) : undefined },
           { href: '/dashboard/configuracoes', icon: Scale,  label: 'Regras do regimento' },

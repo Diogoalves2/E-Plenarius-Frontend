@@ -20,6 +20,7 @@ const ROLES = [
   { value: 'vereador', label: 'Vereador(a)' },
   { value: 'secretaria', label: 'Secretaria' },
   { value: 'presidente', label: 'Presidente' },
+  { value: 'vice_presidente', label: 'Vice-presidente' },
 ];
 
 export default function VereadoresPage() {

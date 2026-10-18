@@ -5,7 +5,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'superadmin' | 'presidente' | 'vereador' | 'secretaria';
+  role: 'superadmin' | 'presidente' | 'vice_presidente' | 'vereador' | 'secretaria';
   chamberId: string | null;
   initials: string;
   party: string;
@@ -45,3 +45,19 @@ export function storeUser(user: AuthUser) {
 export function clearUser() {
   localStorage.removeItem('auth_user');
 }
+
+/** Presidente ou vice-presidente: conduzem a sessão (votações, expediente, roteiro). */
+export function canConductSession(role?: string | null): boolean {
+  return role === 'presidente' || role === 'vice_presidente';
+}
+
+export const ROLE_LABEL: Record<string, string> = {
+  presidente: 'Presidente',
+  vice_presidente: 'Vice-presidente',
+  vereador: 'Vereador',
+  secretaria: 'Secretaria',
+  superadmin: 'Superadmin',
+};
+
+/** Membros da Casa (votam e contam presença). */
+export const MEMBER_ROLES = ['vereador', 'presidente', 'vice_presidente'];

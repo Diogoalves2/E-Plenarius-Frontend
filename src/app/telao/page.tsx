@@ -104,10 +104,11 @@ export default function TelaoPage() {
         const members: VereadorPresente[] = await membersRes.json();
         setVereadores(
           members
-            .filter(u => (u.role === 'vereador' || u.role === 'presidente') && (u as any).isActive !== false)
+            .filter(u => (u.role === 'vereador' || u.role === 'presidente' || u.role === 'vice_presidente') && (u as any).isActive !== false)
             .sort((a, b) => {
-              if (a.role === 'presidente' && b.role !== 'presidente') return -1;
-              if (a.role !== 'presidente' && b.role === 'presidente') return 1;
+              // Presidente, depois vice, depois os demais
+              const rank = (r: string) => (r === 'presidente' ? 0 : r === 'vice_presidente' ? 1 : 2);
+              if (rank(a.role) !== rank(b.role)) return rank(a.role) - rank(b.role);
               return a.name.localeCompare(b.name, 'pt-BR');
             })
         );

@@ -6,6 +6,7 @@ import { Clock, Plus, Play, Square, X, Loader2, CalendarDays, Paperclip, Trash2,
 import api from '@/lib/api';
 import { fullSessionTitle, ChamberBienio } from '@/lib/sessionTitle';
 import { TIPOS_PROJETO, useChamberRules } from '@/lib/legislativo';
+import { canConductSession, MEMBER_ROLES } from '@/lib/auth';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
@@ -72,6 +73,7 @@ export default function SessoesPage() {
   }
 
   const canCreate = user?.role === 'presidente';
+  const canConduct = canConductSession(user?.role);
   const hasRunning = sessions.some(s => s.status === 'em_andamento');
 
   return (
@@ -124,7 +126,7 @@ export default function SessoesPage() {
                       style={{ background: st.bg, color: st.color }}>
                   {st.label}
                 </span>
-                {canCreate && s.status === 'agendada' && (
+                {canConduct && s.status === 'agendada' && (
                   <button onClick={() => startSession(s.id)} disabled={!!isRunning}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
                           style={{ background: '#059669', opacity: isRunning ? 0.7 : 1 }}>
@@ -132,7 +134,7 @@ export default function SessoesPage() {
                     Iniciar
                   </button>
                 )}
-                {canCreate && s.status === 'em_andamento' && (
+                {canConduct && s.status === 'em_andamento' && (
                   <button onClick={() => endSession(s.id)} disabled={!!isRunning}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
                           style={{ background: '#dc2626', opacity: isRunning ? 0.7 : 1 }}>
@@ -191,7 +193,7 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
 
   useEffect(() => {
     api.get(`/users/chamber/${chamberId}`).then(r => {
-      setVereadores(r.data.filter((u: VereadorOption) => ['vereador', 'presidente'].includes(u.role)));
+      setVereadores(r.data.filter((u: VereadorOption) => MEMBER_ROLES.includes(u.role)));
     }).catch(() => {});
   }, [chamberId]);
 
