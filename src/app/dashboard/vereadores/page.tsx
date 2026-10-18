@@ -5,6 +5,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Users, Plus, X, Loader2, Eye, EyeOff, ImagePlus, Trash2, Pencil, ChevronRight, Shield, Check } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
+import { useSocket } from '@/hooks/useSocket';
+import { MEMBER_ROLES } from '@/lib/auth';
+
+type PresenceStatus = 'presente' | 'ausente' | 'sem_sessao' | 'inativo' | 'na';
+
+const PRESENCE_UI: Record<PresenceStatus, { label: string; dot: string; color: string }> = {
+  presente:   { label: 'PRESENTE',   dot: '#10B981', color: '#059669' },
+  ausente:    { label: 'AUSENTE',    dot: '#EF4444', color: '#DC2626' },
+  sem_sessao: { label: 'SEM SESSÃO', dot: '#CBD5E1', color: '#8A94A2' },
+  inativo:    { label: 'INATIVO',    dot: '#CBD5E1', color: '#8A94A2' },
+  na:         { label: '—',          dot: 'transparent', color: '#8A94A2' },
+};
 
 interface Vereador {
   id: string;
@@ -131,7 +143,40 @@ export default function VereadoresPage() {
   }, [search, list]);
 
   const canCreate = user?.role === 'presidente';
-  const presentes = list.filter(v => v.isActive).length;
+
+  // Presença REAL na sessão em andamento (mesma do quórum) — não confundir com conta ativa.
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [presentIds, setPresentIds] = useState<Set<string>>(new Set());
+  const loadPresence = useCallback(async () => {
+    if (!user?.chamberId) return;
+    try {
+      const { data: sess } = await api.get(`/sessions/active/${user.chamberId}`);
+      if (!sess?.id) { setActiveSessionId(null); setPresentIds(new Set()); return; }
+      setActiveSessionId(sess.id);
+      const { data: pres } = await api.get(`/sessions/${sess.id}/presences`);
+      setPresentIds(new Set((pres as { userId: string }[]).map(p => p.userId)));
+    } catch { /* mantém o último estado */ }
+  }, [user?.chamberId]);
+  useEffect(() => {
+    loadPresence();
+    const id = setInterval(loadPresence, 20_000);
+    return () => clearInterval(id);
+  }, [loadPresence]);
+  const { socket } = useSocket(activeSessionId);
+  useEffect(() => {
+    if (!socket) return;
+    const onQuorum = () => loadPresence();
+    socket.on('quorum:updated', onQuorum);
+    return () => { socket.off('quorum:updated', onQuorum); };
+  }, [socket, loadPresence]);
+
+  const presenceOf = (v: Vereador): PresenceStatus => {
+    if (!MEMBER_ROLES.includes(v.role)) return 'na';
+    if (!v.isActive) return 'inativo';
+    if (!activeSessionId) return 'sem_sessao';
+    return presentIds.has(v.id) ? 'presente' : 'ausente';
+  };
+  const presentes = list.filter(v => presenceOf(v) === 'presente').length;
 
   function handleSelect(v: Vereador) {
     setSelected(prev => prev?.id === v.id ? null : v);
@@ -179,7 +224,9 @@ export default function VereadoresPage() {
             </div>
             <p className="text-sm flex-shrink-0" style={{ color: '#8A94A2' }}>
               {filtered.length} de {list.length} ·{' '}
-              <span className="font-semibold" style={{ color: '#059669' }}>{presentes} presentes</span>
+              {activeSessionId
+                ? <span className="font-semibold" style={{ color: '#059669' }}>{presentes} presentes na sessão</span>
+                : <span className="font-semibold" style={{ color: '#8A94A2' }}>sem sessão em andamento</span>}
             </p>
           </div>
 
@@ -231,10 +278,10 @@ export default function VereadoresPage() {
                     {/* PRESENÇA */}
                     <div className="flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                            style={{ background: v.isActive ? '#10B981' : '#EF4444' }} />
+                            style={{ background: PRESENCE_UI[presenceOf(v)].dot }} />
                       <span className="text-xs font-semibold font-mono-jet"
-                            style={{ color: v.isActive ? '#059669' : '#DC2626' }}>
-                        {v.isActive ? 'PRESENTE' : 'AUSENTE'}
+                            style={{ color: PRESENCE_UI[presenceOf(v)].color }}>
+                        {PRESENCE_UI[presenceOf(v)].label}
                       </span>
                     </div>
                     {/* ÚLT. ACESSO */}
@@ -286,7 +333,7 @@ export default function VereadoresPage() {
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
                   { label: 'VOTOS EM 2026', value: '—' },
-                  { label: 'PRESENÇA',      value: '—' },
+                  { label: 'PRESENÇA',      value: PRESENCE_UI[presenceOf(selected)].label },
                   { label: 'PROJETOS AUTOR', value: '—' },
                   { label: 'FALTAS',        value: '—' },
                 ].map(s => (
