@@ -6,7 +6,7 @@ import { Clock, Plus, Play, Square, X, Loader2, CalendarDays, Paperclip, Trash2,
 import api from '@/lib/api';
 import { fullSessionTitle, ChamberBienio } from '@/lib/sessionTitle';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 const TIPOS_PROJETO = [
   'Projeto de Emenda à Lei Orgânica',

@@ -19,7 +19,7 @@ interface Regimento {
   createdAt: string;
 }
 
-const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace('/api', '');
+const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api\/?$/, '');
 
 export default function RegimentoPage() {
   const { user } = useAuth();

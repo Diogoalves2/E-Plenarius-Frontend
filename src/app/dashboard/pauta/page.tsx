@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FileText, Plus, X, Loader2, AlertCircle, Paperclip, Trash2, ExternalLink } from 'lucide-react';
 import api from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 const TIPOS_PROJETO = [
   'Projeto de Emenda à Lei Orgânica',

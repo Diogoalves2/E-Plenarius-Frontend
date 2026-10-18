@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BarChart3, Users, CheckCircle2, XCircle, Calendar, Loader2, TrendingUp } from 'lucide-react';
 import api from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 interface Stats {
   sessions: { total: number; encerradas: number; emAndamento: number; agendadas: number; };

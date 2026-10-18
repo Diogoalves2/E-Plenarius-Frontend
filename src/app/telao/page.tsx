@@ -8,9 +8,10 @@ import { useExpedienteSounds } from '@/hooks/useExpedienteSounds';
 import { useExpediente, ExpedienteAtivo, AparteAtivo } from '@/hooks/useExpediente';
 import { Video, Volume2 } from 'lucide-react';
 import { fullSessionTitle } from '@/lib/sessionTitle';
+import { SecretTally } from '@/components/voting/SecretTally';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const MEDIA = API.replace('/api', '');
+const MEDIA = API.replace(/\/api\/?$/, '');
 
 interface VereadorPresente {
   id: string; name: string; initials: string; avatarUrl: string | null; party: string | null; role: string;
@@ -52,7 +53,7 @@ export default function TelaoPage() {
   }, [sessionId]);
 
   const { socket, connected } = useSocket(sessionId);
-  const { activeItem, counts, voteLog } = useVoting(sessionId, socket);
+  const { activeItem, counts, countsHidden, totalVotes, voteLog } = useVoting(sessionId, socket);
   const { expedienteAtivo, aparteAtivo } = useExpediente(sessionId);
   const { needsActivation: soundNeedsActivation, activate: activateSound } = useVotingSounds(socket);
   const { needsActivation: expedienteSoundNeedsActivation } = useExpedienteSounds(socket);
@@ -189,7 +190,7 @@ export default function TelaoPage() {
   const ss = String(timer % 60).padStart(2, '0');
   const smm = String(Math.floor(sessionTimer / 60)).padStart(2, '0');
   const sss = String(sessionTimer % 60).padStart(2, '0');
-  const total = counts.sim + counts.nao + counts.abstencao;
+  const total = totalVotes;
   const isApproved = activeItem?.status === 'aprovado';
   const isRejected = activeItem?.status === 'rejeitado';
 
@@ -329,9 +330,11 @@ export default function TelaoPage() {
           <div className="text-[12px] font-mono-jet tracking-widest" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>
             RESULTADO {isApproved || isRejected ? 'FINAL' : 'PARCIAL'}
           </div>
+          {countsHidden ? <SecretTally total={total} dark large /> : (<>
           <BigCount label="SIM" count={counts.sim} color="oklch(0.70 0.16 150)" />
           <BigCount label="NÃO" count={counts.nao} color="oklch(0.68 0.20 25)" />
           <BigCount label="ABSTENÇÃO" count={counts.abstencao} color="oklch(0.70 0.02 250)" />
+          </>)}
           {(isApproved || isRejected) && (
             <div className="p-5 rounded-2xl"
                  style={{ background: isApproved ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',

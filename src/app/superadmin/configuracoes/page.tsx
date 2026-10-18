@@ -6,7 +6,7 @@ import { User, Lock, Info, Loader2, Check, ImagePlus, Trash2, LayoutDashboard } 
 import api from '@/lib/api';
 
 const BLUE = '#1447E6';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 const SYSTEM_LOGO_KEY = 'system_logo_url';
 
 export default function ConfiguracoesPage() {

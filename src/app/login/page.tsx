@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, AlertTriangle } from 'lucide-react';
 
 const SYSTEM_LOGO_KEY = 'system_logo_url';
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 function resolveErrorMessage(err: any): { title: string; detail: string } {
   const status = err?.response?.status;

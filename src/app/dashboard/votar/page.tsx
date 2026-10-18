@@ -6,6 +6,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { useVoting } from '@/hooks/useVoting';
 import api from '@/lib/api';
 import { CheckCircle2, Clock, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { SecretTally } from '@/components/voting/SecretTally';
 
 export default function VotarPage() {
   const { user } = useAuth();
@@ -17,7 +18,7 @@ export default function VotarPage() {
   const [voteError, setVoteError] = useState('');
 
   const { socket, connected } = useSocket(sessionId);
-  const { activeItem, counts, voteLog } = useVoting(sessionId, socket);
+  const { activeItem, counts, countsHidden, totalVotes, voteLog } = useVoting(sessionId, socket);
 
   useEffect(() => {
     if (!user?.chamberId) return;
@@ -68,7 +69,7 @@ export default function VotarPage() {
     }
   }, [activeItem, voting, hasVoted]);
 
-  const total = counts.sim + counts.nao + counts.abstencao;
+  const total = totalVotes;
   const isOpen = activeItem?.status === 'em_votacao';
   const isClosed = activeItem?.status === 'aprovado' || activeItem?.status === 'rejeitado';
 
@@ -230,11 +231,13 @@ export default function VotarPage() {
                    style={{ color: '#8A94A2', letterSpacing: '0.08em' }}>
                   {isClosed ? 'RESULTADO FINAL' : `VOTOS COMPUTADOS · ${total}`}
                 </p>
+                {countsHidden ? <SecretTally total={total} /> : (
                 <div className="flex gap-3">
                   <CountPill label="SIM" count={counts.sim} color="oklch(0.50 0.15 155)" />
                   <CountPill label="NÃO" count={counts.nao} color="oklch(0.52 0.20 25)" />
                   <CountPill label="ABS" count={counts.abstencao} color="#8A94A2" />
                 </div>
+                )}
                 {isClosed && (
                   <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(15,23,42,0.06)' }}>
                     <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold"

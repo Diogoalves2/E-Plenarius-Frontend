@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FileText, CheckCircle2, XCircle, ExternalLink, Search, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 interface AuthorUser {
   id: string;

@@ -15,7 +15,7 @@ interface Vereador {
 }
 interface Chamber { id: string; name: string; city: string; state: string; }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 const ROLES = [
   { value: 'vereador', label: 'Vereador(a)' },
   { value: 'secretaria', label: 'Secretaria' },

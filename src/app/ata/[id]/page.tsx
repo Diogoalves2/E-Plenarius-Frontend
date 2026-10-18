@@ -25,7 +25,7 @@ interface Presence {
 
 interface AgendaItem {
   id: string; number: string; type: string; title: string; authorName: string;
-  status: string; votingType: string; votesYes: number; votesNo: number; votesAbstain: number;
+  status: string; votingType: string; votesYes: number; votesNo: number; votesAbstain: number; resultHash?: string | null;
   votingOpenedAt: string | null; votingClosedAt: string | null;
 }
 
@@ -84,13 +84,19 @@ async function exportDocx(session: Session, chamber: Chamber | null, presences: 
     })),
     new Paragraph({ children: [], spacing: { after: 240 } }),
     new Paragraph({ children: [new TextRun({ text: '2. ORDEM DO DIA', bold: true, size: 24 })], spacing: { after: 160 } }),
-    ...agenda.map((item, i) => new Paragraph({
-      children: [new TextRun({
-        text: `${i + 1}. ${item.number} — ${item.title} (${item.status === 'aprovado' ? 'APROVADO' : item.status === 'rejeitado' ? 'REPROVADO' : 'Pendente'})`,
-        size: 22,
-      })],
-      spacing: { after: 120 },
-    })),
+    ...agenda.flatMap((item, i) => [
+      new Paragraph({
+        children: [new TextRun({
+          text: `${i + 1}. ${item.number} — ${item.title} (${item.status === 'aprovado' ? 'APROVADO' : item.status === 'rejeitado' ? 'REPROVADO' : 'Pendente'})`,
+          size: 22,
+        })],
+        spacing: { after: item.resultHash ? 40 : 120 },
+      }),
+      ...(item.resultHash ? [new Paragraph({
+        children: [new TextRun({ text: `Hash de integridade do resultado: ${item.resultHash}`, size: 16, color: '64748b', font: 'Courier New' })],
+        spacing: { after: 120 },
+      })] : []),
+    ]),
     new Paragraph({ children: [], spacing: { after: 480 } }),
     new Paragraph({ children: [new TextRun({ text: 'Encerrada a sessão, eu, Secretário(a), lavrei a presente ata que, aprovada, vai por mim assinada.', size: 20, color: '64748b', italics: true })], spacing: { after: 960 } }),
     new Paragraph({ children: [new TextRun({ text: '________________________       ________________________', size: 22 })], alignment: AlignmentType.CENTER }),
@@ -190,7 +196,7 @@ export default function AtaPage() {
           {chamber?.logoUrl && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
-              src={`${API.replace('/api', '')}${chamber.logoUrl}`}
+              src={`${API.replace(/\/api\/?$/, '')}${chamber.logoUrl}`}
               alt={chamber.name}
               style={{ height: 64, objectFit: 'contain', marginBottom: 12 }}
             />
@@ -256,6 +262,11 @@ export default function AtaPage() {
                       Votação {item.votingType === 'aberta' ? 'aberta' : 'secreta'} ·
                       Sim: {item.votesYes ?? 0} · Não: {item.votesNo ?? 0} · Abstenção: {item.votesAbstain ?? 0}
                     </p>
+                    {item.resultHash && (
+                      <p style={{ fontSize: 10, color: '#94a3b8', margin: '4px 0 0', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                        Hash de integridade: {item.resultHash}
+                      </p>
+                    )}
                   </div>
                 )}
                 {item.status === 'pendente' && (

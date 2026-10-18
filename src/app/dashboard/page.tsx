@@ -9,8 +9,9 @@ import {
   Play, Square, Eye, EyeOff, Clock, ChevronRight,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { SecretTally } from '@/components/voting/SecretTally';
 
-const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace('/api', '');
+const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api\/?$/, '');
 
 const VOTO_COLORS = {
   sim: { bg: 'oklch(0.50 0.15 155)', light: 'rgba(34,197,94,0.12)', text: '#16a34a' },
@@ -28,7 +29,7 @@ export default function VotacaoAoVivoPage() {
   const [timer, setTimer] = useState(0);
 
   const { socket, connected } = useSocket(sessionId);
-  const { agenda, activeItem, counts, voteLog, loading, openVoting, closeVoting } = useVoting(sessionId, socket);
+  const { agenda, activeItem, counts, countsHidden, totalVotes, voteLog, loading, openVoting, closeVoting } = useVoting(sessionId, socket);
 
   useEffect(() => {
     if (!user?.chamberId) return;
@@ -82,7 +83,7 @@ export default function VotacaoAoVivoPage() {
 
   const mm = String(Math.floor(timer / 60)).padStart(2, '0');
   const ss = String(timer % 60).padStart(2, '0');
-  const totalVotos = counts.sim + counts.nao + counts.abstencao;
+  const totalVotos = totalVotes;
   const isPresidente = user?.role === 'presidente';
 
   return (
@@ -220,11 +221,13 @@ export default function VotacaoAoVivoPage() {
                    style={{ color: '#8A94A2', letterSpacing: '0.08em' }}>
                   {activeItem?.status === 'aprovado' || activeItem?.status === 'rejeitado' ? 'RESULTADO FINAL' : 'RESULTADO PARCIAL'}
                 </p>
+                {countsHidden ? <SecretTally total={totalVotes} /> : (
                 <div className="flex flex-col gap-3">
                   <VoteBar label="SIM" count={counts.sim} total={presentes} color="oklch(0.50 0.15 155)" />
                   <VoteBar label="NÃO" count={counts.nao} total={presentes} color="oklch(0.52 0.20 25)" />
                   <VoteBar label="ABSTENÇÃO" count={counts.abstencao} total={presentes} color="oklch(0.60 0.02 250)" />
                 </div>
+                )}
                 {(activeItem?.status === 'aprovado' || activeItem?.status === 'rejeitado') && (
                   <div className="mt-4 p-3 rounded-xl"
                        style={{

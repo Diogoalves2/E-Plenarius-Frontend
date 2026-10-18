@@ -174,7 +174,7 @@ export default function QuorumPage() {
   );
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 const AVATAR_PALETTE = [
   { a: '#E0E7FF', b: '#C7D2FE', fg: '#3730A3' }, { a: '#FCE7F3', b: '#FBCFE8', fg: '#9D174D' },
   { a: '#FEF3C7', b: '#FDE68A', fg: '#78350F' }, { a: '#DCFCE7', b: '#BBF7D0', fg: '#14532D' },

@@ -29,7 +29,7 @@ interface Inscricao {
 
 const TIPO_LABEL = { grande: 'Grande Expediente', pequeno: 'Pequeno Expediente' };
 const TIPO_DURACAO = { grande: '10 min', pequeno: '5 min' };
-const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace('/api', '');
+const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api\/?$/, '');
 
 function formatTempo(s: number) {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;

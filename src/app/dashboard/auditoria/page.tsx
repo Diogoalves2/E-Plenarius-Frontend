@@ -22,13 +22,17 @@ const ACTION_COLORS: Record<string, string> = {
   'voting:closed':   '#b45309',
   'session:started': '#059669',
   'session:ended':   '#8A94A2',
+  'device:requested': '#b45309',
+  'device:approved':  '#059669',
+  'device:revoked':   '#dc2626',
+  'device:removed':   '#8A94A2',
 };
 
 export default function AuditoriaPage() {
   const { user } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chainStatus, setChainStatus] = useState<{ valid: boolean; brokenAt?: string } | null>(null);
+  const [chainStatus, setChainStatus] = useState<{ valid: boolean; total?: number; brokenAt?: string; reason?: string } | null>(null);
   const [verifying, setVerifying] = useState(false);
 
   const fetchLogs = useCallback(async () => {
@@ -75,8 +79,8 @@ export default function AuditoriaPage() {
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6 text-sm font-semibold"
              style={{ background: chainStatus.valid ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${chainStatus.valid ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`, color: chainStatus.valid ? '#059669' : '#dc2626' }}>
           {chainStatus.valid
-            ? <><CheckCircle2 size={16} /> Cadeia de hash íntegra — nenhuma adulteração detectada.</>
-            : <><XCircle size={16} /> Adulteração detectada no registro: <code className="font-mono-jet ml-1">{chainStatus.brokenAt}</code></>}
+            ? <><CheckCircle2 size={16} /> Cadeia de hash íntegra — {chainStatus.total ?? 0} registros conferidos, nenhuma adulteração detectada.</>
+            : <><XCircle size={16} /> Adulteração detectada ({chainStatus.reason ?? 'cadeia inválida'}) no registro: <code className="font-mono-jet ml-1">{chainStatus.brokenAt}</code></>}
         </div>
       )}
 
@@ -108,7 +112,7 @@ export default function AuditoriaPage() {
                     </p>
                   )}
                 </div>
-                <code className="font-mono-jet text-[11px]" style={{ color: '#8A94A2' }}>{log.hash}</code>
+                <code className="font-mono-jet text-[11px]" style={{ color: '#8A94A2' }} title={log.hash}>{log.hash.slice(0, 12)}…</code>
                 <span style={{ color: '#8A94A2' }}>{log.ipAddress ?? '—'}</span>
                 <span style={{ color: '#8A94A2' }}>
                   {new Date(log.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}

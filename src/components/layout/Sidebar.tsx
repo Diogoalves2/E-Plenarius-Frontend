@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import {
-  Radio, FileText, Users, Shield, Clock, Video, LogOut, Mic, BarChart3, BookOpen, X, Building2, Archive,
+  Radio, FileText, Users, Shield, Clock, Video, LogOut, Mic, BarChart3, BookOpen, X, Building2, Archive, Tablet,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import api from '@/lib/api';
 
-const API_BASE     = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE     = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 const SIDEBAR_BG   = 'radial-gradient(120% 90% at 40% 30%, rgb(26,26,26) 0%, rgb(13,13,13) 50%, rgb(0,0,0) 100%)';
 const SIDEBAR_TEXT = 'rgba(255,255,255,0.65)';
 const ACTIVE_BG    = 'rgba(99,160,255,0.18)';
@@ -38,6 +38,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
   const [presenceCount, setPresenceCount] = useState<string | null>(null);
   const [chamberLogo, setChamberLogo]     = useState<string | null>(null);
   const [chamberName, setChamberName]     = useState<string | null>(null);
+  const [pendingDevices, setPendingDevices] = useState(0);
 
   useEffect(() => {
     if (!user?.chamberId) return;
@@ -65,6 +66,17 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
 
   const isPresidente = user?.role === 'presidente' || user?.role === 'superadmin';
 
+  // Tablets aguardando aprovação (badge no menu)
+  useEffect(() => {
+    if (!user?.chamberId || !isPresidente) return;
+    const load = () => api.get(`/devices/chamber/${user.chamberId}`)
+      .then(({ data }) => setPendingDevices((data as any[]).filter(d => d.status === 'pendente').length))
+      .catch(() => {});
+    load();
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
+  }, [user?.chamberId, isPresidente]);
+
   const NAV_ITEMS = [
     {
       section: 'Sessão',
@@ -84,6 +96,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
         ...(isPresidente ? [
           { href: '/dashboard/sessoes',    icon: Clock,     label: 'Sessões' },
           { href: '/dashboard/vereadores', icon: Users,     label: 'Vereadores' },
+          { href: '/dashboard/dispositivos', icon: Tablet,  label: 'Tablets', badge: pendingDevices ? String(pendingDevices) : undefined },
         ] : []),
         { href: '/dashboard/estatisticas', icon: BarChart3, label: 'Estatísticas' },
         { href: '/dashboard/auditoria',    icon: Shield,    label: 'Auditoria' },

@@ -20,7 +20,7 @@ interface Vereador {
   lastLoginAt: string | null;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 const CARGOS = [
   { title: 'Presidente',       role: 'presidente' },
@@ -749,8 +749,8 @@ function PinSection({ userId }: { userId: string }) {
   const [error, setError] = useState('');
 
   async function save() {
-    if (!/^\d{4}$/.test(pin)) {
-      setError('PIN deve ter exatamente 4 dígitos.');
+    if (!/^\d{6}$/.test(pin)) {
+      setError('PIN deve ter exatamente 6 dígitos.');
       return;
     }
     setLoading(true); setError(''); setSuccess(false);
@@ -783,17 +783,17 @@ function PinSection({ userId }: { userId: string }) {
     <div className="pt-4 mt-4" style={{ borderTop: '1px solid rgba(15,23,42,0.08)' }}>
       <p className="font-mono-jet text-[10px] font-semibold mb-1" style={{ color: '#8A94A2', letterSpacing: '0.08em' }}>PIN DO APP MOBILE</p>
       <p className="text-xs mb-3" style={{ color: '#8A94A2' }}>
-        Código de 4 dígitos para o vereador entrar no app do tablet. Anote e repasse ao vereador.
+        Código de 6 dígitos (evite sequências e números repetidos) para o vereador entrar no app do tablet. Anote e repasse ao vereador.
       </p>
       <div className="flex gap-2">
         <input
           type="text"
           inputMode="numeric"
-          pattern="\d{4}"
-          maxLength={4}
+          pattern="\d{6}"
+          maxLength={6}
           value={pin}
-          onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setSuccess(false); setError(''); }}
-          placeholder="0000"
+          onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 6)); setSuccess(false); setError(''); }}
+          placeholder="000000"
           className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none font-mono-jet tracking-[0.4em] text-center"
           style={iStyle}
           onFocus={e => (e.target.style.borderColor = '#1447E6')}
@@ -801,10 +801,10 @@ function PinSection({ userId }: { userId: string }) {
         />
         <button
           type="button"
-          disabled={loading || pin.length !== 4}
+          disabled={loading || pin.length !== 6}
           onClick={save}
           className="px-4 py-2.5 rounded-lg text-sm font-semibold text-white flex items-center gap-1.5 transition-opacity flex-shrink-0"
-          style={{ background: '#1447E6', opacity: (loading || pin.length !== 4) ? 0.5 : 1 }}>
+          style={{ background: '#1447E6', opacity: (loading || pin.length !== 6) ? 0.5 : 1 }}>
           {loading ? <Loader2 size={13} className="animate-spin" /> : null}
           Definir
         </button>

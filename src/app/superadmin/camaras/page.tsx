@@ -28,7 +28,7 @@ interface Credentials {
   presidentePassword: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 const BLUE = '#1447E6';
 
 export default function CamarasPage() {

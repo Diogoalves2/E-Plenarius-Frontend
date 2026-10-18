@@ -15,9 +15,15 @@ interface AgendaItem {
   quorumMinimum: number;
   orderIndex: number;
   status: 'pendente' | 'em_votacao' | 'aprovado' | 'rejeitado' | 'retirado';
-  votesYes: number;
-  votesNo: number;
-  votesAbstain: number;
+  votesYes: number | null;
+  votesNo: number | null;
+  votesAbstain: number | null;
+  /** Total de votos (sempre presente). */
+  votesTotal?: number;
+  /** true = votação secreta em andamento: placar parcial oculto pelo backend. */
+  countsHidden?: boolean;
+  /** Hash do resultado (itens encerrados). */
+  resultHash?: string | null;
   votingOpenedAt?: string;
   votingClosedAt?: string;
 }
@@ -33,7 +39,8 @@ export interface LiveVoteEvent {
   agendaItemId: string;
   choice: string;
   hash: string;
-  counts: VoteCounts;
+  counts: VoteCounts | null;
+  totalVotes?: number;
 }
 
 async function fetchVotesForItem(item: AgendaItem): Promise<LiveVoteEvent[]> {
@@ -62,6 +69,14 @@ export function useVoting(sessionId: string | null, socket: any) {
   const [counts, setCounts] = useState<VoteCounts>({ sim: 0, nao: 0, abstencao: 0 });
   const [voteLog, setVoteLog] = useState<LiveVoteEvent[]>([]);
   const [loading, setLoading] = useState(false);
+  const [countsHidden, setCountsHidden] = useState(false);
+  const [totalVotes, setTotalVotes] = useState(0);
+
+  const applyItemCounts = (item: AgendaItem) => {
+    setCounts({ sim: item.votesYes ?? 0, nao: item.votesNo ?? 0, abstencao: item.votesAbstain ?? 0 });
+    setCountsHidden(!!item.countsHidden);
+    setTotalVotes(item.votesTotal ?? (item.votesYes ?? 0) + (item.votesNo ?? 0) + (item.votesAbstain ?? 0));
+  };
 
   const loadAgenda = useCallback(async () => {
     if (!sessionId) return;
@@ -79,7 +94,7 @@ export function useVoting(sessionId: string | null, socket: any) {
         // Votação em andamento — restaura item + votos já registrados
         const item: AgendaItem = activeRes.data;
         setActiveItem(item);
-        setCounts({ sim: item.votesYes ?? 0, nao: item.votesNo ?? 0, abstencao: item.votesAbstain ?? 0 });
+        applyItemCounts(item);
         const existing = await fetchVotesForItem(item);
         setVoteLog(existing);
       } else {
@@ -90,7 +105,7 @@ export function useVoting(sessionId: string | null, socket: any) {
 
         if (lastClosed) {
           setActiveItem(lastClosed);
-          setCounts({ sim: lastClosed.votesYes ?? 0, nao: lastClosed.votesNo ?? 0, abstencao: lastClosed.votesAbstain ?? 0 });
+          applyItemCounts(lastClosed);
           const existing = await fetchVotesForItem(lastClosed);
           setVoteLog(existing);
         }
@@ -109,6 +124,8 @@ export function useVoting(sessionId: string | null, socket: any) {
     const onVotingOpened = (data: { agendaItem: AgendaItem }) => {
       setActiveItem(data.agendaItem);
       setCounts({ sim: 0, nao: 0, abstencao: 0 });
+      setCountsHidden(data.agendaItem.countsHidden ?? data.agendaItem.votingType === 'secreta');
+      setTotalVotes(0);
       setVoteLog([]);
       setAgenda(prev =>
         prev.map(i => i.id === data.agendaItem.id ? { ...i, status: 'em_votacao' } : i),
@@ -116,13 +133,17 @@ export function useVoting(sessionId: string | null, socket: any) {
     };
 
     const onVoteCast = (data: LiveVoteEvent) => {
-      setCounts(data.counts);
+      // Secreta em andamento: backend manda counts=null e só o total.
+      if (data.counts) setCounts(data.counts);
+      setTotalVotes(data.totalVotes ?? (data.counts ? data.counts.sim + data.counts.nao + data.counts.abstencao : 0));
       setVoteLog(prev => [data, ...prev].slice(0, 50));
     };
 
-    const onVotingClosed = (data: { agendaItem: AgendaItem; result: string; counts: VoteCounts }) => {
+    const onVotingClosed = (data: { agendaItem: AgendaItem; result: string; counts: VoteCounts; totalVotes?: number }) => {
       setActiveItem(data.agendaItem);
       setCounts(data.counts);
+      setCountsHidden(false);
+      setTotalVotes(data.totalVotes ?? data.counts.sim + data.counts.nao + data.counts.abstencao);
       setAgenda(prev =>
         prev.map(i => i.id === data.agendaItem.id ? { ...i, status: data.agendaItem.status } : i),
       );
@@ -154,5 +175,5 @@ export function useVoting(sessionId: string | null, socket: any) {
     return res.data;
   }
 
-  return { agenda, activeItem, counts, voteLog, loading, openVoting, closeVoting, castVote, reload: loadAgenda };
+  return { agenda, activeItem, counts, countsHidden, totalVotes, voteLog, loading, openVoting, closeVoting, castVote, reload: loadAgenda };
 }

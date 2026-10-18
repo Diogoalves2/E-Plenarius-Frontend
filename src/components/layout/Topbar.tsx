@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Menu } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 export function Topbar({ onMenuToggle }: { onMenuToggle: () => void }) {
   const { user } = useAuth();
