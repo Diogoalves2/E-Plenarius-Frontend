@@ -55,7 +55,7 @@ export const ROLE_LABEL: Record<string, string> = {
   presidente: 'Presidente',
   vice_presidente: 'Vice-presidente',
   vereador: 'Vereador',
-  secretaria: 'Secretaria',
+  secretaria: 'Servidor(a) administrativo(a)',
   superadmin: 'Superadmin',
 };
 

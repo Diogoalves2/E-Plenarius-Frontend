@@ -86,10 +86,10 @@ async function exportDocx(ata: Ata) {
       ...(v.resultHash ? [P(`Hash do resultado: ${v.resultHash}`, { size: 16, color: '64748b', font: 'Courier New' })] : []),
     ]),
     new Paragraph({ children: [], spacing: { after: 360 } }),
-    P('Nada mais havendo a tratar, o Presidente encerrou a sessão. Eu, Secretário(a), lavrei a presente ata que, lida e aprovada, vai assinada.', { italics: true, color: '475569' }),
+    P('Nada mais havendo a tratar, o Presidente encerrou a sessão. Eu, 1º Secretário(a), lavrei a presente ata que, lida e aprovada, vai assinada.', { italics: true, color: '475569' }),
     new Paragraph({ children: [], spacing: { after: 720 } }),
     new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: '________________________       ________________________', size: 22 })] }),
-    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Presidente da Câmara                    Secretário(a)', size: 20, color: '64748b' })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Presidente da Câmara                 1º Secretário(a)', size: 20, color: '64748b' })] }),
     new Paragraph({ children: [], spacing: { after: 360 } }),
     P(`Hash do documento (SHA-256): ${ata.documentHash}`, { size: 16, color: '64748b', font: 'Courier New' }),
     P(`Gerado pelo E-Plenarius em ${new Date(ata.geradoEm).toLocaleString('pt-BR')}. Conferência: ${API}/sessions/${s.id}/ata`, { size: 16, color: '94a3b8' }),
@@ -282,11 +282,11 @@ export default function AtaPage() {
 
         <div style={{ marginTop: 50, paddingTop: 20, borderTop: '1px solid #e2e8f0', breakInside: 'avoid' }}>
           <p style={{ fontSize: 12, color: '#64748b', textAlign: 'center', marginBottom: 48 }}>
-            Nada mais havendo a tratar, o Presidente encerrou a sessão. Eu, Secretário(a), lavrei a presente ata que, lida e aprovada, vai assinada.
+            Nada mais havendo a tratar, o Presidente encerrou a sessão. Eu, 1º Secretário(a), lavrei a presente ata que, lida e aprovada, vai assinada.
           </p>
           <div style={{ display: 'flex', justifyContent: 'space-around' }}>
             <SignatureLine label="Presidente da Câmara" />
-            <SignatureLine label="Secretário(a)" />
+            <SignatureLine label="1º Secretário(a)" />
           </div>
         </div>
 

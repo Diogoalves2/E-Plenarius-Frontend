@@ -34,16 +34,19 @@ interface Vereador {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
+// Mesa Diretora: presidente, vice e 1º/2º secretários são VEREADORES (votam, contam quórum, usam o tablet).
+// O perfil 'secretaria' é para funcionário da câmara: opera o painel, não vota.
 const CARGOS = [
   { title: 'Presidente',       role: 'presidente' },
   { title: 'Vice-presidente',  role: 'vice_presidente' },
-  { title: '1º Secretário(a)', role: 'secretaria' },
-  { title: '2º Secretário(a)', role: 'secretaria' },
+  { title: '1º Secretário(a)', role: 'vereador'   },
+  { title: '2º Secretário(a)', role: 'vereador'   },
   { title: 'Vereador',         role: 'vereador'   },
+  { title: 'Servidor(a) administrativo(a)', role: 'secretaria' },
 ] as const;
 
 function displayTitle(v: Vereador) {
-  return v.title ?? (v.role === 'presidente' ? 'Presidente' : v.role === 'vice_presidente' ? 'Vice-presidente' : v.role === 'secretaria' ? 'Secretaria' : 'Vereador');
+  return v.title ?? (v.role === 'presidente' ? 'Presidente' : v.role === 'vice_presidente' ? 'Vice-presidente' : v.role === 'secretaria' ? 'Servidor(a) administrativo(a)' : 'Vereador');
 }
 
 const AVATAR_PALETTE = [

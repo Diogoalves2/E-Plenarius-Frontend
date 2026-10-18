@@ -106,9 +106,10 @@ export default function TelaoPage() {
           members
             .filter(u => (u.role === 'vereador' || u.role === 'presidente' || u.role === 'vice_presidente') && (u as any).isActive !== false)
             .sort((a, b) => {
-              // Presidente, depois vice, depois os demais
-              const rank = (r: string) => (r === 'presidente' ? 0 : r === 'vice_presidente' ? 1 : 2);
-              if (rank(a.role) !== rank(b.role)) return rank(a.role) - rank(b.role);
+              // Mesa Diretora primeiro: presidente, vice, 1º e 2º secretários; depois os demais
+              const rank = (u: any) => u.role === 'presidente' ? 0 : u.role === 'vice_presidente' ? 1
+                : /^1º Secret/i.test(u.title ?? '') ? 2 : /^2º Secret/i.test(u.title ?? '') ? 3 : 4;
+              if (rank(a) !== rank(b)) return rank(a) - rank(b);
               return a.name.localeCompare(b.name, 'pt-BR');
             })
         );
