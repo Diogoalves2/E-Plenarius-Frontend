@@ -22,6 +22,7 @@ interface Ata {
     explanation: string | null; resultHash: string | null; totalVotes: number;
     nominal: { name: string; party: string | null; choice: string }[] | null; votantes: string[] | null;
   }[];
+  degravacao: { aprovadaEm: string; hash: string; trechos: { inicioSeg: number; orador: string | null; texto: string }[] } | null;
   documentHash: string;
   auditoria: { cadeiaIntegra: boolean; registrosConferidos: number; motivo: string | null };
   geradoEm: string;
@@ -34,6 +35,7 @@ const TIPO_FALA: Record<string, string> = { grande: 'Grande Expediente', pequeno
 
 const hm = (d: string | null) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
 const fmt = (d: string | null) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+const tc = (s: number) => `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 const dur = (s: number) => `${Math.floor(s / 60)}min${s % 60 ? ` ${s % 60}s` : ''}`;
 const longDate = (d: string) => new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -91,6 +93,13 @@ async function exportDocx(ata: Ata) {
     new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: '________________________       ________________________', size: 22 })] }),
     new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Presidente da Câmara                 1º Secretário(a)', size: 20, color: '64748b' })] }),
     new Paragraph({ children: [], spacing: { after: 360 } }),
+    ...(ata.degravacao ? [
+      new Paragraph({ children: [], pageBreakBefore: true }),
+      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'ANEXO I — DEGRAVAÇÃO INTEGRAL', bold: true, size: 26 })], spacing: { after: 200 } }),
+      P(`Transcrição do áudio da sessão, revisada e aprovada em ${new Date(ata.degravacao.aprovadaEm).toLocaleString('pt-BR')}.`, { italics: true, color: '475569' }),
+      ...ata.degravacao.trechos.map(t => P(`[${tc(t.inicioSeg)}] ${t.orador ? `${t.orador}: ` : ''}${t.texto}`)),
+      P(`Hash da degravação aprovada: ${ata.degravacao.hash}`, { size: 16, color: '64748b', font: 'Courier New' }),
+    ] : []),
     P(`Hash do documento (SHA-256): ${ata.documentHash}`, { size: 16, color: '64748b', font: 'Courier New' }),
     P(`Gerado pelo E-Plenarius em ${new Date(ata.geradoEm).toLocaleString('pt-BR')}. Conferência: ${API}/sessions/${s.id}/ata`, { size: 16, color: '94a3b8' }),
   ];
@@ -289,6 +298,24 @@ export default function AtaPage() {
             <SignatureLine label="1º Secretário(a)" />
           </div>
         </div>
+
+        {ata.degravacao && (
+          <div style={{ marginTop: 48, breakBefore: 'page' }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', textAlign: 'center', marginBottom: 6 }}>ANEXO I — DEGRAVAÇÃO INTEGRAL</h2>
+            <p style={{ fontSize: 11, color: '#64748b', textAlign: 'center', marginBottom: 18 }}>
+              Transcrição do áudio da sessão, revisada e aprovada em {new Date(ata.degravacao.aprovadaEm).toLocaleString('pt-BR')}.
+            </p>
+            {ata.degravacao.trechos.map((t, i) => (
+              <p key={i} style={{ fontSize: 12, color: '#1e293b', lineHeight: 1.6, margin: '0 0 8px' }}>
+                <span style={{ fontFamily: 'monospace', color: '#94a3b8', fontSize: 10 }}>[{tc(t.inicioSeg)}]</span>{' '}
+                {t.orador && <strong>{t.orador}: </strong>}{t.texto}
+              </p>
+            ))}
+            <p style={{ fontSize: 10, color: '#94a3b8', fontFamily: 'monospace', wordBreak: 'break-all', marginTop: 12 }}>
+              Hash da degravação aprovada: {ata.degravacao.hash}
+            </p>
+          </div>
+        )}
 
         <div style={{ marginTop: 36, padding: '12px 14px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', breakInside: 'avoid' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>

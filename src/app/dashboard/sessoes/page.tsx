@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Plus, Play, Square, X, Loader2, CalendarDays, Paperclip, Trash2, FileText } from 'lucide-react';
+import { Clock, Plus, Play, Square, X, Loader2, CalendarDays, Paperclip, Trash2, FileText, AudioLines } from 'lucide-react';
 import api from '@/lib/api';
 import { fullSessionTitle, ChamberBienio } from '@/lib/sessionTitle';
 import { TIPOS_PROJETO, useChamberRules } from '@/lib/legislativo';
@@ -147,6 +147,13 @@ export default function SessoesPage() {
                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
                      style={{ background: 'rgba(15,23,42,0.06)', color: '#4B5563' }}>
                     <FileText size={12} /> Gerar Ata
+                  </a>
+                )}
+                {s.status === 'encerrada' && (
+                  <a href={`/dashboard/degravacao/${s.id}`}
+                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
+                     style={{ background: 'rgba(20,71,230,0.08)', color: '#1447E6' }}>
+                    <AudioLines size={12} /> Degravação
                   </a>
                 )}
               </div>

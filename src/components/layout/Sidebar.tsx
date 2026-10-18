@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import {
-  Radio, FileText, Users, Shield, Clock, Video, LogOut, Mic, BarChart3, BookOpen, X, Building2, Archive, Tablet, Scale,
+  Radio, FileText, Users, Shield, Clock, Video, LogOut, Mic, BarChart3, BookOpen, X, Building2, Archive, Tablet, Scale, AudioLines,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import api from '@/lib/api';
@@ -94,6 +94,7 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
       items: [
         { href: '/dashboard/projetos',     icon: Archive,   label: 'Projetos Votados' },
         { href: '/dashboard/regimento',    icon: BookOpen,  label: 'Regimento Interno' },
+        { href: '/dashboard/degravacao',   icon: AudioLines, label: 'Degravação' },
         ...(canConduct ? [{ href: '/dashboard/sessoes', icon: Clock, label: 'Sessões' }] : []),
         ...(isPresidente ? [
           { href: '/dashboard/vereadores', icon: Users,     label: 'Vereadores' },
