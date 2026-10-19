@@ -43,10 +43,36 @@
 @layer utilities {
   .font-tight { font-family: 'Inter Tight', system-ui, sans-serif; }
   .font-mono-jet { font-family: 'JetBrains Mono', ui-monospace, monospace; }
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(128,128,128,0.3) transparent;
-  }
+}
+
+/* ── Barra de rolagem ──────────────────────────────────────────────────────
+   Fina e arredondada; discreta em repouso, mais visível no hover, azul ao arrastar.
+   Menus laterais (aside, fundo escuro) usam a versão clara. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: rgba(15, 23, 42, 0.16);
+  border: 3px solid transparent;          /* "respiro" em volta da barra */
+  background-clip: content-box;
+  border-radius: 999px;
+  min-height: 40px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgba(15, 23, 42, 0.32); }
+::-webkit-scrollbar-thumb:active { background-color: rgba(20, 71, 230, 0.6); }
+
+aside ::-webkit-scrollbar-thumb,
+aside::-webkit-scrollbar-thumb,
+.dark ::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.14); }
+aside ::-webkit-scrollbar-thumb:hover,
+aside::-webkit-scrollbar-thumb:hover,
+.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.3); }
+
+/* Firefox (sem ::-webkit-scrollbar): barra fina nativa com as mesmas cores.
+   Não aplicar no Chrome — scrollbar-color anularia o estilo acima. */
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: rgba(15, 23, 42, 0.25) transparent; }
+  aside, aside *, .dark, .dark * { scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
 }
 
 @keyframes pulseDot {
