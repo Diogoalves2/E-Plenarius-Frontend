@@ -32,7 +32,7 @@ export default function AuditoriaPage() {
   const { user } = useAuth();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chainStatus, setChainStatus] = useState<{ valid: boolean; total?: number; brokenAt?: string; reason?: string } | null>(null);
+  const [chainStatus, setChainStatus] = useState<{ valid: boolean; total?: number; brokenAt?: string; reason?: string; seal?: 'ativo' | 'desativado'; unsealed?: number } | null>(null);
   const [verifying, setVerifying] = useState(false);
 
   const fetchLogs = useCallback(async () => {
@@ -79,7 +79,10 @@ export default function AuditoriaPage() {
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6 text-sm font-semibold"
              style={{ background: chainStatus.valid ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${chainStatus.valid ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`, color: chainStatus.valid ? '#059669' : '#dc2626' }}>
           {chainStatus.valid
-            ? <><CheckCircle2 size={16} /> Cadeia de hash íntegra — {chainStatus.total ?? 0} registros conferidos, nenhuma adulteração detectada.</>
+            ? <><CheckCircle2 size={16} /> Cadeia de hash íntegra — {chainStatus.total ?? 0} registros conferidos, nenhuma adulteração detectada.
+                {chainStatus.seal === 'ativo'
+                  ? <span className="font-normal"> Selo HMAC ativo{chainStatus.unsealed ? ` (${chainStatus.unsealed} registros antigos sem selo)` : ''}.</span>
+                  : <span className="font-normal"> Selo HMAC desativado no servidor.</span>}</>
             : <><XCircle size={16} /> Adulteração detectada ({chainStatus.reason ?? 'cadeia inválida'}) no registro: <code className="font-mono-jet ml-1">{chainStatus.brokenAt}</code></>}
         </div>
       )}

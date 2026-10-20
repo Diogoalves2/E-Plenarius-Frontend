@@ -655,7 +655,7 @@ function ImageUploadField({
 }: {
   preview: string | null;
   file: File | null;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemove: () => void;
   placeholder: string;

@@ -681,7 +681,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
                 type={showNewPwd ? 'text' : 'password'}
                 value={newPassword}
                 onChange={e => { setNewPassword(e.target.value); setPwdSuccess(false); setPwdError(''); }}
-                placeholder="Nova senha (mín. 6 caracteres)"
+                placeholder="Nova senha (mín. 8 caracteres)"
                 className="w-full px-3.5 py-2.5 pr-10 rounded-lg text-sm outline-none"
                 style={iStyle}
                 onFocus={e => (e.target.style.borderColor = '#1447E6')}
@@ -694,7 +694,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
             </div>
             <button
               type="button"
-              disabled={pwdLoading || newPassword.length < 6}
+              disabled={pwdLoading || newPassword.length < 8}
               onClick={async () => {
                 setPwdLoading(true); setPwdError(''); setPwdSuccess(false);
                 try {
@@ -708,7 +708,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
                 }
               }}
               className="px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-opacity flex-shrink-0"
-              style={{ background: '#1447E6', color: '#fff', opacity: (pwdLoading || newPassword.length < 6) ? 0.5 : 1 }}>
+              style={{ background: '#1447E6', color: '#fff', opacity: (pwdLoading || newPassword.length < 8) ? 0.5 : 1 }}>
               {pwdLoading ? <Loader2 size={13} className="animate-spin" /> : null}
               {pwdLoading ? 'Salvando…' : 'Definir'}
             </button>

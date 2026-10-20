@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Video, Copy, Check, ExternalLink, Monitor, AlertCircle,
-  Youtube, Save, Loader2, Trash2, Upload, Link,
+  MonitorPlay, Save, Loader2, Trash2, Upload, Link,
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -185,7 +185,7 @@ export default function TransmissaoPage() {
           {/* YouTube stream config */}
           <div className="bg-white rounded-xl p-5 flex flex-col gap-4" style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
             <div className="flex items-center gap-2">
-              <Youtube size={16} style={{ color: '#dc2626' }} />
+              <MonitorPlay size={16} style={{ color: '#dc2626' }} />
               <p className="font-semibold text-sm" style={{ color: '#0B1220' }}>Transmissão YouTube</p>
               <span className="ml-auto text-xs font-mono-jet px-2 py-0.5 rounded"
                     style={{ background: session.youtubeUrl ? 'rgba(16,185,129,0.1)' : 'rgba(15,23,42,0.05)',
