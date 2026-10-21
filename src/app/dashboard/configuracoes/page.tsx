@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, Check, ArrowUp, ArrowDown, Trash2, Plus, RotateCcw } from 'lucide-react';
 import api from '@/lib/api';
+import { MfaCard } from '@/components/auth/MfaCard';
 import {
   DEFAULT_PHASES, TIPOS_PROJETO, MAJORITY_LABEL, MAJORITY_HELP, PRESIDENT_RULE_LABEL, requiredVotes, useChamberRules,
   type Majority, type PresidentVoteRule, type SessionPhase,
@@ -75,6 +76,7 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="p-4 sm:p-8 max-w-3xl">
+      {user?.role === 'presidente' && <MfaCard />}
       <h2 className="font-tight font-semibold text-2xl" style={{ color: '#0B1220', letterSpacing: '-0.02em' }}>Regras do regimento</h2>
       <p className="text-sm mt-1 mb-6" style={{ color: '#8A94A2' }}>
         Ajuste conforme o Regimento Interno e a Lei Orgânica da câmara. As regras valem para as próximas votações.

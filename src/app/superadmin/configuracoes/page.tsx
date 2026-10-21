@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, Lock, Info, Loader2, Check, ImagePlus, Trash2, LayoutDashboard } from 'lucide-react';
 import api from '@/lib/api';
+import { MfaCard } from '@/components/auth/MfaCard';
 
 const BLUE = '#1447E6';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
@@ -37,6 +38,8 @@ export default function ConfiguracoesPage() {
             <InfoRow label="Perfil" value="Superadministrador" badge />
           </div>
         </Section>
+
+        <MfaCard />
 
         {/* Change password */}
         <Section icon={<Lock size={16} />} title="Alterar Senha">

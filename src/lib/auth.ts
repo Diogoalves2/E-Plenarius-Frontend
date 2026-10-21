@@ -1,5 +1,4 @@
-import Cookies from 'js-cookie';
-import api from './api';
+import api, { authApi, setAccessToken } from './api';
 
 export interface AuthUser {
   id: string;
@@ -12,38 +11,52 @@ export interface AuthUser {
   avatarUrl?: string | null;
 }
 
-export async function login(identifier: string, password: string): Promise<AuthUser> {
-  const { data } = await api.post('/auth/login', { identifier, password });
-  Cookies.set('access_token', data.accessToken, { expires: 1 / 96 });
-  Cookies.set('refresh_token', data.refreshToken, { expires: 7 });
+/** Login concluído, ou falta o segundo fator (código do app autenticador). */
+export type LoginResult =
+  | { done: true; user: AuthUser }
+  | { done: false; mfaToken: string; setup: boolean };
+
+function finish(data: any): AuthUser {
+  setAccessToken(data.accessToken);
   return data.user;
+}
+
+export async function login(identifier: string, password: string): Promise<LoginResult> {
+  const { data } = await authApi.post('/login', { identifier, password });
+  if (data.mfaToken) return { done: false, mfaToken: data.mfaToken, setup: !!data.mfaSetupRequired };
+  return { done: true, user: finish(data) };
+}
+
+export async function mfaSetup(mfaToken: string): Promise<{ secret: string; otpauthUrl: string }> {
+  return (await authApi.post('/mfa/setup', { mfaToken })).data;
+}
+
+export async function mfaEnable(mfaToken: string, code: string, remember: boolean) {
+  const { data } = await authApi.post('/mfa/enable', { mfaToken, code, remember });
+  return { user: finish(data), recoveryCodes: data.recoveryCodes as string[] };
+}
+
+export async function mfaVerify(mfaToken: string, code: string, remember: boolean) {
+  const { data } = await authApi.post('/mfa/verify', { mfaToken, code, remember });
+  return { user: finish(data), usedRecoveryCode: !!data.usedRecoveryCode };
 }
 
 export async function logout() {
   try { await api.delete('/sessions/leave'); } catch {}
-  try { await api.post('/auth/logout'); } catch {}
-  Cookies.remove('access_token');
-  Cookies.remove('refresh_token');
+  try { await authApi.post('/logout'); } catch {}
+  setAccessToken(null);
 }
 
-export function isAuthenticated(): boolean {
-  return !!Cookies.get('access_token') || !!Cookies.get('refresh_token');
-}
-
-export function getStoredUser(): AuthUser | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('auth_user');
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-export function storeUser(user: AuthUser) {
-  localStorage.setItem('auth_user', JSON.stringify(user));
-}
-
-export function clearUser() {
-  localStorage.removeItem('auth_user');
+/**
+ * Versões antigas guardavam tokens em cookies legíveis por JavaScript e o usuário no
+ * localStorage. Apaga o que tiver sobrado neste navegador.
+ */
+export function clearLegacyStorage() {
+  if (typeof window === 'undefined') return;
+  for (const name of ['access_token', 'refresh_token']) {
+    document.cookie = `${name}=; Max-Age=0; path=/`;
+  }
+  try { localStorage.removeItem('auth_user'); } catch {}
 }
 
 /** Presidente ou vice-presidente: conduzem a sessão (votações, expediente, roteiro). */

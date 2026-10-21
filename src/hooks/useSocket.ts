@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import Cookies from 'js-cookie';
+import { getAccessToken } from '@/lib/api';
 
 const WS_URL = (process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3001');
 
@@ -15,7 +15,7 @@ export function useSocket(sessionId: string | null) {
   useEffect(() => {
     if (!sessionId) return;
 
-    const getToken = () => Cookies.get('access_token') ?? '';
+    const getToken = () => getAccessToken() ?? '';
 
     const sock = io(`${WS_URL}/voting`, {
       auth: { token: getToken() },

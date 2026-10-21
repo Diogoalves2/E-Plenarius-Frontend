@@ -1,72 +1,94 @@
 import axios, { AxiosError } from 'axios';
-import Cookies from 'js-cookie';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
-api.interceptors.request.use((config) => {
-  const token = Cookies.get('access_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+/**
+ * Access token (15 min) só em memória: não vai para cookie legível nem localStorage.
+ * Ao recarregar a página, a sessão volta pelo refresh token, que fica num cookie HttpOnly
+ * gravado pela rota /api/auth do próprio painel (ver app/api/auth/[...path]/route.ts).
+ */
+let accessToken: string | null = null;
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+export function setAccessToken(token: string | null) {
+  accessToken = token;
+}
+
+/** Chamadas de login/sessão: mesmo domínio do painel (cookies HttpOnly). */
+export const authApi = axios.create({
+  baseURL: '/api/auth',
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
+});
+
+authApi.interceptors.request.use((config) => {
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
 });
 
-async function tryRefresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string } | null> {
-  // Tenta refresh até 2x com backoff. Diferencia 401 (token inválido = logout)
-  // de erro transitório (network/5xx = retry, mantém sessão).
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const { data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-        { refreshToken },
-        { timeout: 15000 },
-      );
-      return data;
-    } catch (err) {
-      const status = (err as AxiosError).response?.status;
-      // 401 / 403 = refresh token revogado ou expirado. Logout real.
-      if (status === 401 || status === 403) return null;
-      // 500/network/timeout: espera 1s e tenta de novo
-      if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
-    }
-  }
-  // Esgotou tentativas em erro transitório. Não desloga — só falha a request atual.
-  throw new Error('refresh-transient');
+export interface SessionData {
+  accessToken: string;
+  user: any;
 }
+
+let refreshing: Promise<SessionData | null> | null = null;
+
+/**
+ * Renova a sessão pelo cookie HttpOnly. Uma renovação por vez (várias requisições que
+ * recebem 401 juntas esperam a mesma). null = sessão encerrada (fazer login).
+ * Erro de rede/servidor lança 'refresh-transient' e não desloga.
+ */
+export function refreshSession(): Promise<SessionData | null> {
+  if (!refreshing) {
+    refreshing = (async () => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const { data } = await authApi.post('/refresh', {}, { timeout: 15000 });
+          setAccessToken(data.accessToken);
+          return data as SessionData;
+        } catch (err) {
+          const status = (err as AxiosError).response?.status;
+          if (status === 401 || status === 403) {
+            setAccessToken(null);
+            return null;
+          }
+          if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+      throw new Error('refresh-transient');
+    })().finally(() => { refreshing = null; });
+  }
+  return refreshing;
+}
+
+api.interceptors.request.use((config) => {
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  return config;
+});
 
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const original = error.config as any;
-    if (error.response?.status === 401 && !original?._retry && !original?.url?.includes('/auth/login')) {
+    if (error.response?.status === 401 && original && !original._retry) {
       original._retry = true;
-      const refreshToken = Cookies.get('refresh_token');
-      if (!refreshToken) {
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
       try {
-        const tokens = await tryRefresh(refreshToken);
-        if (tokens === null) {
-          // Refresh token de fato inválido — logout
-          Cookies.remove('access_token');
-          Cookies.remove('refresh_token');
+        const session = await refreshSession();
+        if (!session) {
           window.location.href = '/login';
           return Promise.reject(error);
         }
-        Cookies.set('access_token', tokens.accessToken, { expires: 1 / 96 });
-        Cookies.set('refresh_token', tokens.refreshToken, { expires: 7 });
-        original.headers.Authorization = `Bearer ${tokens.accessToken}`;
+        original.headers.Authorization = `Bearer ${session.accessToken}`;
         return api(original);
-      } catch (e: any) {
-        // Erro transitório — não desloga. Só propaga falha desta request.
-        if (e?.message === 'refresh-transient') {
-          return Promise.reject(error);
-        }
-        Cookies.remove('access_token');
-        Cookies.remove('refresh_token');
-        window.location.href = '/login';
+      } catch {
+        // Erro transitório: não desloga, só falha esta requisição.
+        return Promise.reject(error);
       }
     }
     return Promise.reject(error);

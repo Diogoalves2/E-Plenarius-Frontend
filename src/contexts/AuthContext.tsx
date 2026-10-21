@@ -2,18 +2,34 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthUser, login as apiLogin, logout as apiLogout, getStoredUser, storeUser, clearUser, isAuthenticated } from '@/lib/auth';
-import api from '@/lib/api';
+import { AuthUser, LoginResult, login as apiLogin, logout as apiLogout, clearLegacyStorage } from '@/lib/auth';
+import api, { refreshSession } from '@/lib/api';
 
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  login: (identifier: string, password: string) => Promise<void>;
+  /** Pode parar no meio: superadmin/presidente ainda precisam do código da 2FA. */
+  login: (identifier: string, password: string) => Promise<LoginResult>;
+  /** Conclui o login (depois da senha, ou da 2FA) e vai para o painel. */
+  finishLogin: (user: AuthUser) => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function toAuthUser(data: any): AuthUser {
+  return {
+    id: data.id,
+    name: data.name,
+    email: data.email,
+    role: data.role,
+    chamberId: data.chamberId ?? null,
+    initials: data.initials ?? '',
+    party: data.party ?? '',
+    avatarUrl: data.avatarUrl ?? null,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -23,47 +39,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       const { data } = await api.get('/users/me');
-      const merged: AuthUser = {
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        chamberId: data.chamberId ?? null,
-        initials: data.initials ?? '',
-        party: data.party ?? '',
-        avatarUrl: data.avatarUrl ?? null,
-      };
-      storeUser(merged);
-      setUser(merged);
-    } catch { /* keep stored user */ }
+      setUser(toAuthUser(data));
+    } catch { /* mantém o usuário atual */ }
   }, []);
 
+  // Ao abrir/recarregar: a sessão volta pelo cookie HttpOnly (nada fica salvo no navegador).
   useEffect(() => {
-    if (isAuthenticated()) {
-      const stored = getStoredUser();
-      if (stored) setUser(stored);
-      refreshUser().finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, [refreshUser]);
+    clearLegacyStorage();
+    refreshSession()
+      .then(session => { if (session) setUser(toAuthUser(session.user)); })
+      .catch(() => { /* servidor fora do ar: tela de login mostra o erro ao tentar */ })
+      .finally(() => setLoading(false));
+  }, []);
 
-  async function login(identifier: string, password: string) {
-    const userData = await apiLogin(identifier, password);
-    storeUser(userData);
-    setUser(userData);
-    router.push(userData.role === 'superadmin' ? '/superadmin' : '/dashboard');
-  }
+  const finishLogin = useCallback((u: AuthUser) => {
+    setUser(toAuthUser(u));
+    router.push(u.role === 'superadmin' ? '/superadmin' : '/dashboard');
+  }, [router]);
+
+  const login = useCallback(async (identifier: string, password: string) => {
+    const result = await apiLogin(identifier, password);
+    if (result.done) finishLogin(result.user);
+    return result;
+  }, [finishLogin]);
 
   async function logout() {
     await apiLogout();
-    clearUser();
     setUser(null);
     router.push('/login');
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, finishLogin, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

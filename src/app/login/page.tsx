@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, AlertTriangle } from 'lucide-react';
+import { MfaSetupStep, MfaVerifyStep } from '@/components/auth/MfaSteps';
 
 const SYSTEM_LOGO_KEY = 'system_logo_url';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
@@ -22,7 +23,7 @@ function resolveErrorMessage(err: any): { title: string; detail: string } {
 }
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, finishLogin } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +31,8 @@ export default function LoginPage() {
   const [error, setError] = useState<{ title: string; detail: string } | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
+  // Senha ok, falta o segundo fator (superadmin/presidente)
+  const [mfa, setMfa] = useState<{ token: string; setup: boolean } | null>(null);
 
   useEffect(() => {
     const cached = localStorage.getItem(SYSTEM_LOGO_KEY);
@@ -52,7 +55,11 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login(identifier, password);
+      const result = await login(identifier, password);
+      if (!result.done) {
+        setMfa({ token: result.mfaToken, setup: result.setup });
+        setPassword('');
+      }
     } catch (err: any) {
       setError(resolveErrorMessage(err));
       setShakeKey(k => k + 1);
@@ -128,6 +135,11 @@ export default function LoginPage() {
                 </>}
           </div>
 
+          {mfa ? (
+            mfa.setup
+              ? <MfaSetupStep mfaToken={mfa.token} onDone={finishLogin} onBack={() => setMfa(null)} />
+              : <MfaVerifyStep mfaToken={mfa.token} onDone={finishLogin} onBack={() => setMfa(null)} />
+          ) : (<>
           <p className="font-mono-jet text-xs tracking-widest mb-1.5"
              style={{ color: '#5B636D', letterSpacing: '0.1em' }}>
             ACESSO AO SISTEMA
@@ -223,6 +235,7 @@ export default function LoginPage() {
             Acesso restrito a membros da câmara.<br />
             Contate o administrador para solicitar acesso.
           </p>
+          </>)}
         </div>
       </div>
     </div>

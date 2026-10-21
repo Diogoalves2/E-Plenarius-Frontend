@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Plus, Pencil, X, Loader2, UserCheck, UserX,
-  ImagePlus, Trash2, Eye, EyeOff,
+  ImagePlus, Trash2, Eye, EyeOff, ShieldOff,
 } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -12,6 +12,7 @@ interface Vereador {
   id: string; name: string; email: string; role: string;
   title: string | null; party: string | null; initials: string;
   avatarUrl: string | null; isActive: boolean; lastLoginAt: string | null;
+  mfaEnabledAt?: string | null;
 }
 interface Chamber { id: string; name: string; city: string; state: string; }
 
@@ -46,6 +47,20 @@ export default function VereadoresPage() {
   }, [chamberId]);
 
   useEffect(() => { load(); }, [load]);
+
+  /** Celular perdido: apaga a 2FA; no próximo login a pessoa cadastra o app de novo. */
+  async function resetMfa(v: Vereador) {
+    if (!confirm(`Redefinir a verificação em duas etapas de ${v.name}?
+
+As sessões abertas no painel serão encerradas e, no próximo login, será preciso cadastrar o app autenticador novamente. Faça isso só após confirmar a identidade da pessoa.`)) return;
+    try {
+      await api.post(`/auth/mfa/reset/${v.id}`);
+      setVereadores(prev => prev.map(u => u.id === v.id ? { ...u, mfaEnabledAt: null } : u));
+      alert('2FA redefinida.');
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? 'Não foi possível redefinir.');
+    }
+  }
 
   async function toggleActive(v: Vereador) {
     setToggling(v.id);
@@ -110,6 +125,14 @@ export default function VereadoresPage() {
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}>
                   <Pencil size={13} />
                 </button>
+                {v.role === 'presidente' && v.mfaEnabledAt && (
+                  <button onClick={() => resetMfa(v)} title="Redefinir verificação em duas etapas (celular perdido)"
+                          className="p-1.5 rounded-lg transition-colors" style={{ color: '#8A94A2' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(217,119,6,0.08)'; e.currentTarget.style.color = '#D97706'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}>
+                    <ShieldOff size={13} />
+                  </button>
+                )}
                 <button onClick={() => toggleActive(v)} disabled={toggling === v.id}
                         title={v.isActive ? 'Desativar' : 'Ativar'}
                         className="p-1.5 rounded-lg transition-colors" style={{ color: '#8A94A2' }}
