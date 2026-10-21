@@ -83,7 +83,7 @@ function SystemLogoSection() {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const { data } = await api.post('/upload/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const { data } = await api.post('/upload/logo?target=system', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       const fullUrl = `${API_BASE}${data.url}`;
       localStorage.setItem(SYSTEM_LOGO_KEY, fullUrl);
       setLogoUrl(fullUrl);

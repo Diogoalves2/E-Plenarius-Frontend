@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import {
-  Radio, FileText, Users, Shield, Clock, Video, LogOut, Mic, BarChart3, BookOpen, X, Building2, Archive, Tablet, Scale, AudioLines,
+  Radio, FileText, Users, Shield, Clock, Video, LogOut, Mic, BarChart3, BookOpen, X, Building2, Archive, Tablet, Scale, AudioLines, Globe, ExternalLink,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import api from '@/lib/api';
@@ -170,6 +170,17 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
             })}
           </div>
         ))}
+        {user?.chamberId && (
+          <a href={`/publico/${user.chamberId}`} target="_blank" rel="noopener noreferrer"
+             className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium"
+             style={{ color: SIDEBAR_TEXT }}
+             onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = '#fff'; }}
+             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = SIDEBAR_TEXT; }}>
+            <Globe size={16} />
+            <span className="flex-1">Portal público</span>
+            <ExternalLink size={13} style={{ opacity: 0.6 }} />
+          </a>
+        )}
       </div>
 
       {/* ── Rodapé ── */}

@@ -116,7 +116,7 @@ export default function TransmissaoPage() {
         setUploadingThumb(true);
         const fd = new FormData();
         fd.append('file', thumbFile);
-        const { data } = await api.post('/upload/avatar', fd, {
+        const { data } = await api.post('/upload/avatar?purpose=thumb', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         finalThumbUrl = data.url;
