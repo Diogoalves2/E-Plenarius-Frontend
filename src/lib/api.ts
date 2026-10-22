@@ -50,6 +50,10 @@ export function refreshSession(): Promise<SessionData | null> {
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           const { data } = await authApi.post('/refresh', {}, { timeout: 15000 });
+          if (!data?.accessToken) {
+            setAccessToken(null);
+            return null;
+          }
           setAccessToken(data.accessToken);
           return data as SessionData;
         } catch (err) {

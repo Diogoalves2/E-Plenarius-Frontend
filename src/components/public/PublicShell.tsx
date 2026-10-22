@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CalendarDays, Users, Vote, Database, Landmark, Radio, Loader2 } from 'lucide-react';
 
@@ -41,19 +40,9 @@ export interface PublicCamara {
 export function PublicShell({ chamberId, active, title, subtitle, children }: {
   chamberId: string; active: string; title: string; subtitle?: string; children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const [camara, setCamara] = useState<PublicCamara | null>(null);
   const [liveSession, setLiveSession] = useState<string | null>(null);
   const isUuid = UUID.test(chamberId);
-
-  // Endereço amigável: /publico/camara-municipal-de-emas → troca pelo id na URL.
-  useEffect(() => {
-    if (isUuid) return;
-    publicGet<{ id: string }>(`/chambers/by-slug/${encodeURIComponent(chamberId)}`).then(c => {
-      if (c?.id) router.replace(pathname.replace(`/publico/${chamberId}`, `/publico/${c.id}`));
-    });
-  }, [chamberId, isUuid, pathname, router]);
 
   useEffect(() => {
     if (!isUuid) return;

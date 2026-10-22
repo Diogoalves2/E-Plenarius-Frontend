@@ -83,7 +83,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pat
     }
 
     if (path === 'refresh') {
-      if (!rt) return NextResponse.json({ message: 'Sessão expirada' }, { status: 401 });
+      // Sem cookie = visitante sem login: responde "sem sessão" sem erro (evita 401 em toda página pública).
+      if (!rt) return NextResponse.json({ session: null }, { headers: { 'Cache-Control': 'no-store' } });
       const r = await callApi('refresh', { refreshToken: rt }, req);
       const res = reply(r.status, r.data);
       if (r.status === 401 || r.status === 403) res.cookies.delete({ name: RT_COOKIE, path: cookieBase.path });
