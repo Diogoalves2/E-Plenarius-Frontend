@@ -32,11 +32,34 @@ export default function TelaoPage() {
   const [vereadores, setVereadores] = useState<VereadorPresente[]>([]);
   const [presentes, setPresentes] = useState<Set<string>>(new Set());
 
+  // ?camara=<id>: telão fixo da câmara — mostra nome/brasão mesmo sem sessão e entra
+  // sozinho na sessão em andamento. ?sessionId=<id> continua abrindo uma sessão específica.
+  const [camaraId, setCamaraId] = useState<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const sid = params.get('sessionId') || localStorage.getItem('telao_session');
+    const camara = params.get('camara');
+    const sid = params.get('sessionId');
+    if (camara) {
+      setCamaraId(camara);
+      fetch(`${API}/chambers/${camara}`).then(r => r.ok ? r.json() : null).then(c => c && setChamberInfo(c)).catch(() => {});
+    }
     if (sid) setSessionId(sid);
+    else if (!camara) {
+      const saved = localStorage.getItem('telao_session');
+      if (saved) setSessionId(saved);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!camaraId || new URLSearchParams(window.location.search).get('sessionId')) return;
+    const check = () => fetch(`${API}/sessions/active/${camaraId}`)
+      .then(r => r.ok ? r.text() : '')
+      .then(t => { const s = t ? JSON.parse(t) : null; if (s?.id) setSessionId(prev => prev === s.id ? prev : s.id); })
+      .catch(() => {});
+    check();
+    const id = setInterval(check, 15_000);
+    return () => clearInterval(id);
+  }, [camaraId]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -923,7 +946,6 @@ function Brasao({ size = 40, color = 'currentColor', chamberInfo }: { size?: num
       <circle cx="40" cy="40" r="32" fill="none" stroke={color} strokeWidth="0.9" strokeDasharray="2 3" opacity="0.5" />
       <path d="M40 18 L44.5 32 L59 32 L47.2 40.5 L51.8 54.5 L40 46 L28.2 54.5 L32.8 40.5 L21 32 L35.5 32 Z" fill={color} opacity="0.92" />
       <path d="M14 56 L66 56" stroke={color} strokeWidth="1.2" opacity="0.6" />
-      <text x="40" y="68" textAnchor="middle" fontSize="8" fontFamily="Inter Tight, sans-serif" fontWeight="700" fill={color} letterSpacing="2">VA</text>
     </svg>
   );
 }

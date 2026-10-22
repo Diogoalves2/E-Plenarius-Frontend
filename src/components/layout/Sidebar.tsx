@@ -9,8 +9,8 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import api from '@/lib/api';
+import { useChamber } from '@/contexts/ChamberContext';
 
-const API_BASE     = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 const SIDEBAR_BG   = 'radial-gradient(120% 90% at 40% 30%, rgb(26,26,26) 0%, rgb(13,13,13) 50%, rgb(0,0,0) 100%)';
 const SIDEBAR_TEXT = 'rgba(255,255,255,0.65)';
 const ACTIVE_BG    = 'rgba(99,160,255,0.18)';
@@ -36,19 +36,12 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [agendaCount, setAgendaCount]     = useState<number | null>(null);
   const [presenceCount, setPresenceCount] = useState<string | null>(null);
-  const [chamberLogo, setChamberLogo]     = useState<string | null>(null);
-  const [chamberName, setChamberName]     = useState<string | null>(null);
+  const chamber = useChamber();
+  const chamberName = chamber?.name ?? null;
   const [pendingDevices, setPendingDevices] = useState(0);
 
   useEffect(() => {
     if (!user?.chamberId) return;
-
-    api.get(`/chambers/${user.chamberId}`)
-      .then(({ data }) => {
-        setChamberName(data.name);
-        if (data.logoUrl) setChamberLogo(`${API_BASE}${data.logoUrl}`);
-      })
-      .catch(() => {});
 
     api.get(`/sessions/active/${user.chamberId}`)
       .then(async ({ data }) => {
@@ -117,19 +110,14 @@ export function Sidebar({ open, onClose }: { open?: boolean; onClose?: () => voi
       )}
       style={{ width: 272, background: SIDEBAR_BG, flexShrink: 0 }}
     >
-      {/* ── Logo + nome da câmara ── */}
+      {/* ── Marca do sistema (a câmara fica em destaque no topo da página) ── */}
       <div className="flex items-center gap-3 flex-shrink-0"
            style={{ height: 56, padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        {chamberLogo ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={chamberLogo} alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
-        ) : (
-          <Building2 size={26} color="#63A0FF" style={{ flexShrink: 0 }} />
-        )}
-        <span className="font-tight font-semibold text-white text-sm leading-tight truncate flex-1"
-              style={{ letterSpacing: '-0.01em' }}>
-          {chamberName ?? '…'}
-        </span>
+        <Building2 size={22} color="#63A0FF" style={{ flexShrink: 0 }} />
+        <div className="flex-1 min-w-0 leading-tight">
+          <p className="font-tight font-semibold text-white text-sm" style={{ letterSpacing: '-0.01em' }}>E-Plenarius</p>
+          <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.45)' }}>{chamberName ?? 'Painel legislativo'}</p>
+        </div>
         <button onClick={onClose} className="lg:hidden flex-shrink-0" style={{ color: SIDEBAR_TEXT }} aria-label="Fechar menu">
           <X size={16} />
         </button>

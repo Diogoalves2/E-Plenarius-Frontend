@@ -70,7 +70,8 @@ export default function TransmissaoPage() {
 
   useEffect(() => { fetchSession(); }, [fetchSession]);
 
-  const telaoUrl = session ? `${FRONTEND_URL}/telao?sessionId=${session.id}` : '';
+  // Link fixo da câmara: o telão mostra nome/brasão e entra sozinho em cada sessão aberta.
+  const telaoUrl = user?.chamberId ? `${FRONTEND_URL}/telao?camara=${user.chamberId}` : '';
 
   function copyLink() {
     navigator.clipboard.writeText(telaoUrl);

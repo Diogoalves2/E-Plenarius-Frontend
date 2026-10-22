@@ -118,7 +118,6 @@ function Brasao({ size = 40, color = 'currentColor' }: { size?: number; color?: 
       <circle cx="40" cy="40" r="32" fill="none" stroke={color} strokeWidth="0.9" strokeDasharray="2 3" opacity="0.5" />
       <path d="M40 18 L44.5 32 L59 32 L47.2 40.5 L51.8 54.5 L40 46 L28.2 54.5 L32.8 40.5 L21 32 L35.5 32 Z" fill={color} opacity="0.92" />
       <path d="M14 56 L66 56" stroke={color} strokeWidth="1.2" opacity="0.6" />
-      <text x="40" y="68" textAnchor="middle" fontSize="8" fontFamily="Inter Tight, sans-serif" fontWeight="700" fill={color} letterSpacing="2">VA</text>
     </svg>
   );
 }

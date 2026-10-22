@@ -1,12 +1,14 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu } from 'lucide-react';
+import { Menu, Landmark } from 'lucide-react';
+import { useChamber } from '@/contexts/ChamberContext';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 export function Topbar({ onMenuToggle }: { onMenuToggle: () => void }) {
   const { user } = useAuth();
+  const chamber = useChamber();
 
   return (
     <header className="flex items-center gap-3 px-6 h-14 flex-shrink-0"
@@ -22,12 +24,35 @@ export function Topbar({ onMenuToggle }: { onMenuToggle: () => void }) {
         <Menu size={20} />
       </button>
 
-      {/* Live indicator */}
-      <div className="flex items-center gap-1.5 ml-auto px-2.5 py-1 rounded-full text-[11px] font-mono-jet font-semibold tracking-wider flex-shrink-0"
-           style={{ border: '1px solid rgba(15,23,42,0.08)', color: '#4B5563' }}>
-        <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: '#10b981' }} />
-        AO VIVO
+      {/* Câmara do usuário: logo + nome sempre visíveis (inclusive no tablet/celular, sem o menu lateral) */}
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center justify-center rounded-xl flex-shrink-0 overflow-hidden"
+             style={{ width: 38, height: 38, background: '#F6F7F9', border: '1px solid rgba(15,23,42,0.08)' }}>
+          {chamber?.logo
+            /* eslint-disable-next-line @next/next/no-img-element */
+            ? <img src={chamber.logo} alt={`Brasão da ${chamber.name}`} style={{ width: 32, height: 32, objectFit: 'contain' }} />
+            : <Landmark size={18} color="#1447E6" />}
+        </div>
+        <div className="min-w-0 leading-tight">
+          <p className="text-[14px] font-semibold truncate" style={{ color: '#0B1220', letterSpacing: '-0.01em' }}>
+            {chamber?.name ?? ' '}
+          </p>
+          <p className="text-[11px] truncate" style={{ color: '#8A94A2' }}>
+            {chamber ? `Poder Legislativo · ${chamber.city}/${chamber.state}` : ' '}
+          </p>
+        </div>
       </div>
+
+      {/* Sessão: "ao vivo" só quando há sessão em andamento */}
+      <div className="hidden sm:flex items-center gap-1.5 ml-auto px-2.5 py-1 rounded-full text-[11px] font-mono-jet font-semibold tracking-wider flex-shrink-0"
+           style={chamber?.live
+             ? { border: '1px solid #A7F3D0', background: '#ECFDF5', color: '#047857' }
+             : { border: '1px solid rgba(15,23,42,0.08)', color: '#8A94A2' }}>
+        <span className={`w-1.5 h-1.5 rounded-full ${chamber?.live ? 'animate-pulse-dot' : ''}`}
+              style={{ background: chamber?.live ? '#10b981' : '#CBD5E1' }} />
+        {chamber?.live ? 'SESSÃO AO VIVO' : 'SEM SESSÃO'}
+      </div>
+      <div className="sm:hidden ml-auto" />
 
       {/* Usuário (avatar + nome + email) */}
       {user && (

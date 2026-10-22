@@ -364,7 +364,7 @@ function NoSessionCard() {
       <Clock size={40} style={{ color: '#8A94A2' }} />
       <h2 className="font-tight font-semibold text-xl text-gray-700">Nenhuma sessão em andamento</h2>
       <p className="text-sm text-gray-400 max-w-sm">
-        Crie e inicie uma sessão pelo Swagger ou aguarde o presidente iniciar a sessão do dia.
+        Quando o presidente iniciar a sessão do dia (menu Sessões), a votação aparece aqui automaticamente.
       </p>
     </div>
   );

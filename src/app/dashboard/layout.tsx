@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Topbar } from '@/components/layout/Topbar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { ChamberProvider } from '@/contexts/ChamberContext';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,6 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
+    <ChamberProvider>
     <div className="flex h-screen overflow-hidden" style={{ background: '#F6F7F9' }}>
       {/* Overlay mobile/tablet */}
       {sidebarOpen && (
@@ -42,5 +44,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
+    </ChamberProvider>
   );
 }

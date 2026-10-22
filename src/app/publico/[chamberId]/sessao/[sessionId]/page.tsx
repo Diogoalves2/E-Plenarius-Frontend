@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Users, FileText, CheckCircle, XCircle, Loader2, Radio } from 'lucide-react';
 import Link from 'next/link';
+import { PublicShell } from '@/components/public/PublicShell';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -71,38 +72,21 @@ export default function SessaoPublicaPage() {
   const vereadores = presences.filter(p => p.user.role !== 'superadmin');
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F6F7F9', fontFamily: 'Inter, system-ui, sans-serif' }}>
-
-      {/* Header */}
-      <div style={{ background: '#0B0D10', color: '#E9EDF2', padding: '20px 40px' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <Link href={`/publico/${chamberId}`}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#5B636D',
-                         textDecoration: 'none', marginBottom: 12, fontFamily: 'monospace' }}>
-            <ArrowLeft size={13} /> Voltar às sessões
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-            <div>
-              <p style={{ fontSize: 10, letterSpacing: '0.1em', color: '#5B636D', marginBottom: 4, fontFamily: 'monospace' }}>
-                {new Date(session.date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-              </p>
-              <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
-                {session.number}ª Sessão {TYPE_LABEL[session.type] ?? session.type}
-              </h1>
-            </div>
-            {isLive && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 999,
-                            background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', flexShrink: 0 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-                <Radio size={12} style={{ color: '#10b981' }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#10b981', fontFamily: 'monospace' }}>AO VIVO</span>
-              </div>
-            )}
-          </div>
-        </div>
+    <PublicShell chamberId={chamberId} active="sessoes"
+                 title={`${session.number}ª Sessão ${TYPE_LABEL[session.type] ?? session.type}`}
+                 subtitle={new Date(session.date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}>
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <Link href={`/publico/${chamberId}`} className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: '#1447E6' }}>
+          <ArrowLeft size={14} /> Todas as sessões
+        </Link>
+        {isLive && (
+          <span className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{ background: 'rgba(5,150,105,0.08)', color: '#047857', border: '1px solid rgba(5,150,105,0.25)' }}>
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#059669' }} /> <Radio size={12} /> AO VIVO
+          </span>
+        )}
       </div>
-
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 40px' }}>
+      <div>
 
         {/* Presença */}
         <Card>
@@ -162,7 +146,7 @@ export default function SessaoPublicaPage() {
                               ? <CheckCircle size={14} style={{ color: '#059669', flexShrink: 0 }} />
                               : <XCircle size={14} style={{ color: '#DC2626', flexShrink: 0 }} />}
                             <span style={{ fontSize: 12, fontWeight: 700, color: isAprovado ? '#059669' : '#DC2626' }}>
-                              {isAprovado ? 'APROVADO' : 'REPROVADO'}
+                              {isAprovado ? 'APROVADO' : 'REJEITADO'}
                             </span>
                             <span style={{ fontSize: 12, color: '#8A94A2', marginLeft: 4 }}>
                               Sim: {item.votesYes ?? 0} · Não: {item.votesNo ?? 0} · Abs.: {item.votesAbstain ?? 0}
@@ -193,7 +177,7 @@ export default function SessaoPublicaPage() {
           </p>
         )}
       </div>
-    </div>
+    </PublicShell>
   );
 }
 
