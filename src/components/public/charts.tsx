@@ -50,7 +50,7 @@ export function StatTile({ label, value, hint, accent = T.accent, icon }: {
   label: string; value: string | number; hint?: string; accent?: string; icon?: React.ReactNode;
 }) {
   return (
-    <div className="relative bg-white rounded-2xl p-4 sm:p-5 overflow-hidden transition-shadow hover:shadow-md"
+    <div className="relative bg-white rounded-2xl p-4 sm:p-5 overflow-hidden hover:shadow-[0_2px_10px_rgba(15,23,42,0.05)] transition-shadow duration-200"
          style={{ border: `1px solid ${T.hair}`, boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
       <div className="flex items-start justify-between gap-3">
         <p className="text-[13px] font-medium leading-snug" style={{ color: T.muted }}>{label}</p>
@@ -63,7 +63,6 @@ export function StatTile({ label, value, hint, accent = T.accent, icon }: {
       </div>
       <p className="font-bold mt-1" style={{ fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.03em', color: T.ink }}>{value}</p>
       {hint && <p className="text-xs mt-1.5" style={{ color: T.muted }}>{hint}</p>}
-      <span className="absolute left-0 right-0 bottom-0" style={{ height: 3, background: accent, opacity: 0.85 }} />
     </div>
   );
 }

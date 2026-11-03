@@ -194,7 +194,7 @@ export default function VotacoesPublicoPage() {
                   const total = (v.votesYes ?? 0) + (v.votesNo ?? 0) + (v.votesAbstain ?? 0);
                   return (
                     <Link key={v.id} href={`/publico/${chamberId}/votacoes/${v.id}`}
-                          className="group block rounded-xl p-4 hover:shadow-sm transition-shadow"
+                          className="group block rounded-xl p-4 hover:shadow-[0_2px_10px_rgba(15,23,42,0.05)] transition-shadow duration-200"
                           style={{ border: `1px solid ${T.hair}` }}>
                       <div className="flex items-start gap-3">
                         <div className="min-w-0 flex-1">

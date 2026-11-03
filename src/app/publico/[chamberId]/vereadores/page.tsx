@@ -44,7 +44,7 @@ export default function VereadoresPublicoPage() {
               const votou = m.votos.sim + m.votos.nao + m.votos.abstencao;
               return (
                 <Link key={m.id} href={`/publico/${chamberId}/vereadores/${m.id}`}
-                      className="bg-white rounded-2xl p-5 flex flex-col gap-4 hover:shadow-md transition-shadow"
+                      className="bg-white rounded-2xl p-5 flex flex-col gap-4 hover:shadow-[0_2px_10px_rgba(15,23,42,0.05)] transition-shadow duration-200"
                       style={{ border: `1px solid ${T.hair}` }}>
                   <div className="flex items-center gap-3">
                     <Avatar src={m.avatarUrl ? `${PUBLIC_MEDIA}${m.avatarUrl}` : null} initials={m.initials} size={56} />
