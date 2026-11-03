@@ -7,6 +7,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import { MEMBER_ROLES } from '@/lib/auth';
+import { useDialog } from '@/components/ui/Dialog';
 
 type PresenceStatus = 'presente' | 'ausente' | 'sem_sessao' | 'inativo' | 'na';
 
@@ -794,6 +795,7 @@ function AudioChannelSection({ userId, initialChannel }: { userId: string; initi
 /* ── PIN section (mobile app) ───────────────────────────────────── */
 
 function PinSection({ userId }: { userId: string }) {
+  const dialog = useDialog();
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -817,7 +819,7 @@ function PinSection({ userId }: { userId: string }) {
   }
 
   async function clearPin() {
-    if (!confirm('Remover o PIN do app deste vereador? Ele não conseguirá logar no app mobile até ter um novo PIN definido.')) return;
+    if (!(await dialog.confirm({ title: 'Remover o PIN deste vereador?', message: 'Ele não conseguirá entrar no app do tablet até ter um novo PIN definido.', tone: 'danger', confirmLabel: 'Remover PIN' }))) return;
     setLoading(true); setError(''); setSuccess(false);
     try {
       await api.patch(`/users/${userId}/pin`, { pin: null });

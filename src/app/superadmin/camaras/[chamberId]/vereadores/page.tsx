@@ -7,6 +7,7 @@ import {
   ImagePlus, Trash2, Eye, EyeOff, ShieldOff,
 } from 'lucide-react';
 import api from '@/lib/api';
+import { useDialog } from '@/components/ui/Dialog';
 
 interface Vereador {
   id: string; name: string; email: string; role: string;
@@ -25,6 +26,7 @@ const ROLES = [
 ];
 
 export default function VereadoresPage() {
+  const dialog = useDialog();
   const { chamberId } = useParams<{ chamberId: string }>();
   const router = useRouter();
   const [chamber, setChamber] = useState<Chamber | null>(null);
@@ -50,15 +52,16 @@ export default function VereadoresPage() {
 
   /** Celular perdido: apaga a 2FA; no próximo login a pessoa cadastra o app de novo. */
   async function resetMfa(v: Vereador) {
-    if (!confirm(`Redefinir a verificação em duas etapas de ${v.name}?
-
-As sessões abertas no painel serão encerradas e, no próximo login, será preciso cadastrar o app autenticador novamente. Faça isso só após confirmar a identidade da pessoa.`)) return;
+    if (!(await dialog.confirm({
+      title: `Redefinir a verificação em duas etapas de ${v.name}?`, tone: 'danger', confirmLabel: 'Redefinir 2FA',
+      message: 'As sessões abertas no painel serão encerradas e, no próximo login, será preciso cadastrar o app autenticador de novo. Faça isso só depois de confirmar a identidade da pessoa.',
+    }))) return;
     try {
       await api.post(`/auth/mfa/reset/${v.id}`);
       setVereadores(prev => prev.map(u => u.id === v.id ? { ...u, mfaEnabledAt: null } : u));
-      alert('2FA redefinida.');
+      await dialog.alert({ title: '2FA redefinida', message: `No próximo login, ${v.name} cadastra o app autenticador novamente.` });
     } catch (err: any) {
-      alert(err?.response?.data?.message ?? 'Não foi possível redefinir.');
+      await dialog.alert({ title: 'Não foi possível redefinir', message: err?.response?.data?.message ?? 'Tente novamente.', tone: 'danger' });
     }
   }
 

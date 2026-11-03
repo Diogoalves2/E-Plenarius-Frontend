@@ -7,6 +7,7 @@ import {
   Upload, FileText, Trash2, Check, Loader2,
   BookOpen, Download, History, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import { useDialog } from '@/components/ui/Dialog';
 
 interface Regimento {
   id: string;
@@ -23,6 +24,7 @@ const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').r
 
 export default function RegimentoPage() {
   const { user } = useAuth();
+  const dialog = useDialog();
   const [active, setActive] = useState<Regimento | null>(null);
   const [all, setAll] = useState<Regimento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +110,7 @@ export default function RegimentoPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Excluir esta versão do regimento interno?')) return;
+    if (!(await dialog.confirm({ title: 'Excluir esta versão do regimento?', message: 'O PDF deixa de aparecer no painel e no app dos vereadores.', tone: 'danger', confirmLabel: 'Excluir' }))) return;
     try {
       await api.delete(`/regimento/${id}`);
       await reload();

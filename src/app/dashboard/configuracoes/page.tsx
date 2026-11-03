@@ -9,6 +9,7 @@ import {
   DEFAULT_PHASES, TIPOS_PROJETO, MAJORITY_LABEL, MAJORITY_HELP, PRESIDENT_RULE_LABEL, requiredVotes, useChamberRules,
   type Majority, type PresidentVoteRule, type SessionPhase,
 } from '@/lib/legislativo';
+import { useDialog } from '@/components/ui/Dialog';
 
 
 const ipv4 = (ip: string) => {
@@ -34,6 +35,7 @@ const slug = (s: string) =>
 
 export default function ConfiguracoesPage() {
   const { user } = useAuth();
+  const dialog = useDialog();
   const { rules, setRules } = useChamberRules(user?.chamberId);
   const [seats, setSeats] = useState('');
   const [presidentRule, setPresidentRule] = useState<PresidentVoteRule>('always');
@@ -208,8 +210,11 @@ export default function ConfiguracoesPage() {
           ))}
         </div>
         <div className="flex gap-3 mt-3">
-          <button onClick={() => {
-            const label = prompt('Nome da nova fase:');
+          <button onClick={async () => {
+            const label = await dialog.prompt({
+              title: 'Nova fase do roteiro', label: 'Nome da fase', placeholder: 'Ex.: Leitura de correspondências',
+              confirmLabel: 'Adicionar fase', required: true, maxLength: 80,
+            });
             if (!label?.trim()) return;
             let key = slug(label) || 'fase'; while (phases.some(p => p.key === key)) key += '_2';
             setPhases(ps => [...ps, { key, label: label.trim() }]);

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tablet, Check, Ban, Trash2, Loader2, RefreshCw, Pencil } from 'lucide-react';
 import api from '@/lib/api';
+import { useDialog } from '@/components/ui/Dialog';
 
 interface Device {
   id: string;
@@ -27,6 +28,7 @@ const fmt = (d: string | null) =>
 
 export default function DispositivosPage() {
   const { user } = useAuth();
+  const dialog = useDialog();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -55,22 +57,37 @@ export default function DispositivosPage() {
     finally { setBusy(null); }
   }
 
-  const approve = (d: Device) => {
-    const label = prompt(`Autorizar o tablet ${d.code}.\nDê um nome para identificá-lo (opcional):`, d.label ?? '');
+  const approve = async (d: Device) => {
+    const label = await dialog.prompt({
+      title: `Autorizar o tablet ${d.code}`,
+      message: 'Confira se o código é o mesmo que aparece na tela do tablet. Depois de autorizado, ele já pode ser usado para entrar no app.',
+      label: 'Nome do tablet (opcional)', placeholder: 'Ex.: Tablet do vereador João, Mesa 3…',
+      defaultValue: d.label ?? '', confirmLabel: 'Autorizar tablet', maxLength: 100,
+    });
     if (label === null) return;
     act(d.id, () => api.patch(`/devices/${d.id}/approve`, { label: label.trim() || null }));
   };
-  const rename = (d: Device) => {
-    const label = prompt('Novo nome do tablet:', d.label ?? '');
+  const rename = async (d: Device) => {
+    const label = await dialog.prompt({
+      title: 'Renomear tablet', message: <>Código <b className="font-mono-jet">{d.code}</b></>,
+      label: 'Nome do tablet', placeholder: 'Ex.: Tablet do presidente',
+      defaultValue: d.label ?? '', confirmLabel: 'Salvar nome', maxLength: 100,
+    });
     if (label === null) return;
     act(d.id, () => api.patch(`/devices/${d.id}/label`, { label: label.trim() || null }));
   };
-  const revoke = (d: Device) => {
-    if (!confirm(`Bloquear o tablet ${d.label ?? d.code}? Quem estiver usando é desconectado na hora.`)) return;
+  const revoke = async (d: Device) => {
+    if (!(await dialog.confirm({
+      title: `Bloquear o tablet ${d.label ?? d.code}?`, tone: 'danger', confirmLabel: 'Bloquear',
+      message: 'Quem estiver usando é desconectado na hora e o tablet não consegue mais entrar até ser autorizado de novo.',
+    }))) return;
     act(d.id, () => api.patch(`/devices/${d.id}/revoke`));
   };
-  const remove = (d: Device) => {
-    if (!confirm(`Remover o registro do tablet ${d.label ?? d.code}? Se ele tentar entrar de novo, aparecerá como pendente.`)) return;
+  const remove = async (d: Device) => {
+    if (!(await dialog.confirm({
+      title: `Remover o tablet ${d.label ?? d.code}?`, tone: 'danger', confirmLabel: 'Remover',
+      message: 'O registro é apagado. Se ele tentar entrar de novo, aparecerá aqui como pendente de autorização.',
+    }))) return;
     act(d.id, () => api.delete(`/devices/${d.id}`));
   };
 

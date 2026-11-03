@@ -5,6 +5,7 @@ import { Plus, Building2, MapPin, X, Copy, Check, Loader2, Eye, EyeOff, ImagePlu
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
+import { useDialog } from '@/components/ui/Dialog';
 
 interface Chamber {
   id: string;
@@ -36,6 +37,7 @@ export default function CamarasPage() {
 }
 
 function CamarasPageInner() {
+  const dialog = useDialog();
   const [chambers, setChambers] = useState<Chamber[]>([]);
   const [loadingChambers, setLoadingChambers] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -71,7 +73,7 @@ function CamarasPageInner() {
   }
 
   async function resetCredentials(chamber: Chamber) {
-    if (!confirm(`Redefinir a senha do presidente de "${chamber.name}"? A senha atual deixará de funcionar.`)) return;
+    if (!(await dialog.confirm({ title: 'Redefinir a senha do presidente?', message: <>Câmara <b>{chamber.name}</b>. A senha atual deixa de funcionar e uma nova será exibida.</>, tone: 'danger', confirmLabel: 'Redefinir senha' }))) return;
     setResetting(chamber.id);
     try {
       const { data } = await api.patch(`/chambers/${chamber.id}/reset-credentials`);

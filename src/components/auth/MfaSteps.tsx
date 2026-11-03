@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { Loader2, ShieldCheck, Copy, Download, ArrowLeft, KeyRound } from 'lucide-react';
 import { AuthUser, mfaEnable, mfaSetup, mfaVerify } from '@/lib/auth';
+import { useDialog } from '@/components/ui/Dialog';
 
 const input = {
   background: '#15191F',
@@ -65,6 +66,7 @@ function Back({ onClick }: { onClick: () => void }) {
 export function MfaVerifyStep({ mfaToken, onDone, onBack }: {
   mfaToken: string; onDone: (user: AuthUser) => void; onBack: () => void;
 }) {
+  const dialog = useDialog();
   const [code, setCode] = useState('');
   const [recovery, setRecovery] = useState(false);
   const [remember, setRemember] = useState(false);
@@ -77,7 +79,10 @@ export function MfaVerifyStep({ mfaToken, onDone, onBack }: {
     try {
       const { user, usedRecoveryCode } = await mfaVerify(mfaToken, code, remember);
       if (usedRecoveryCode) {
-        alert('Você entrou com um código de recuperação, que não vale mais. Se perdeu o celular, peça ao administrador para redefinir a verificação em duas etapas.');
+        await dialog.alert({
+          title: 'Código de recuperação usado',
+          message: 'Este código não vale mais. Se você perdeu o celular, peça ao administrador para redefinir a verificação em duas etapas.',
+        });
       }
       onDone(user);
     } catch (err) {

@@ -9,6 +9,7 @@ import {
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { fullSessionTitle } from '@/lib/sessionTitle';
+import { useDialog } from '@/components/ui/Dialog';
 
 const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api\/?$/, '');
 
@@ -44,6 +45,7 @@ const toLocalInput = (d: string | null) => {
 export default function DegravacaoPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { user } = useAuth();
+  const dialog = useDialog();
   const [session, setSession] = useState<any>(null);
   const [chamber, setChamber] = useState<any>(null);
   const [rec, setRec] = useState<Recording | null>(null);
@@ -242,7 +244,7 @@ export default function DegravacaoPage() {
               )}
               <div className="flex gap-2 ml-auto">
                 {canManage && rec.status === 'transcrito' && (
-                  <button disabled={busy || pending > 0} onClick={() => confirm('Aprovar a degravação? Ela será anexada à ata e protegida por hash.') && action(() => api.post(`/recordings/${rec.id}/approve`))}
+                  <button disabled={busy || pending > 0} onClick={async () => (await dialog.confirm({ title: 'Aprovar a degravação?', message: 'Ela será anexada à ata e protegida por hash.', confirmLabel: 'Aprovar' })) && action(() => api.post(`/recordings/${rec.id}/approve`))}
                           title={pending ? 'Confira os trechos marcados antes de aprovar' : ''}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white"
                           style={{ background: '#059669', opacity: busy || pending ? 0.5 : 1 }}>
@@ -250,19 +252,19 @@ export default function DegravacaoPage() {
                   </button>
                 )}
                 {canManage && rec.status === 'aprovado' && (
-                  <button disabled={busy} onClick={() => confirm('Reabrir para correção? A aprovação será desfeita (fica registrado na auditoria).') && action(() => api.post(`/recordings/${rec.id}/reopen`))}
+                  <button disabled={busy} onClick={async () => (await dialog.confirm({ title: 'Reabrir para correção?', message: 'A aprovação será desfeita (fica registrado na auditoria).', confirmLabel: 'Reabrir' })) && action(() => api.post(`/recordings/${rec.id}/reopen`))}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>
                     <RotateCcw size={13} /> Reabrir
                   </button>
                 )}
                 {canManage && ['erro', 'transcrito'].includes(rec.status) && (
-                  <button disabled={busy} onClick={() => confirm('Transcrever novamente? As correções feitas serão perdidas.') && action(() => api.post(`/recordings/${rec.id}/reprocess`))}
+                  <button disabled={busy} onClick={async () => (await dialog.confirm({ title: 'Transcrever novamente?', message: 'As correções feitas nos trechos serão perdidas.', tone: 'danger', confirmLabel: 'Transcrever de novo' })) && action(() => api.post(`/recordings/${rec.id}/reprocess`))}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>
                     <RefreshCw size={13} /> Reprocessar
                   </button>
                 )}
                 {canManage && ['erro', 'transcrito'].includes(rec.status) && (
-                  <button disabled={busy} onClick={() => confirm('Excluir a gravação e a transcrição?') && action(() => api.delete(`/recordings/${rec.id}`))}
+                  <button disabled={busy} onClick={async () => (await dialog.confirm({ title: 'Excluir a gravação e a transcrição?', message: 'Esta ação não pode ser desfeita.', tone: 'danger', confirmLabel: 'Excluir' })) && action(() => api.delete(`/recordings/${rec.id}`))}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#dc2626' }}>
                     <Trash2 size={13} /> Excluir
                   </button>

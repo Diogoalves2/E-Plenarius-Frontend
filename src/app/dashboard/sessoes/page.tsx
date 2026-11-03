@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { fullSessionTitle, ChamberBienio } from '@/lib/sessionTitle';
 import { TIPOS_PROJETO, useChamberRules } from '@/lib/legislativo';
 import { canConductSession, MEMBER_ROLES } from '@/lib/auth';
+import { useDialog } from '@/components/ui/Dialog';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
@@ -37,6 +38,7 @@ const STATUS_STYLE: Record<string, { label: string; bg: string; color: string }>
 
 export default function SessoesPage() {
   const { user } = useAuth();
+  const dialog = useDialog();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [chamber, setChamber] = useState<ChamberBienio | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +68,7 @@ export default function SessoesPage() {
   }
 
   async function endSession(id: string) {
-    if (!confirm('Encerrar esta sessão? Esta ação não pode ser desfeita.')) return;
+    if (!(await dialog.confirm({ title: 'Encerrar esta sessão?', message: 'A ata é gerada com o que foi registrado até agora. Esta ação não pode ser desfeita.', tone: 'danger', confirmLabel: 'Encerrar sessão' }))) return;
     setActionLoading(id + ':end');
     try { await api.patch(`/sessions/${id}/end`); await fetch(); }
     finally { setActionLoading(null); }
