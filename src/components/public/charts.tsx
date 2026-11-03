@@ -46,15 +46,24 @@ export function useTip() {
 
 // ── Peças ───────────────────────────────────────────────────────────────────
 
-export function StatTile({ label, value, hint, accent }: { label: string; value: string | number; hint?: string; accent?: string }) {
+export function StatTile({ label, value, hint, accent = T.accent, icon }: {
+  label: string; value: string | number; hint?: string; accent?: string; icon?: React.ReactNode;
+}) {
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5" style={{ border: `1px solid ${T.hair}` }}>
-      <div className="flex items-center gap-2">
-        {accent && <span className="w-2 h-2 rounded-full" style={{ background: accent }} />}
-        <p className="text-xs font-medium" style={{ color: T.muted }}>{label}</p>
+    <div className="relative bg-white rounded-2xl p-4 sm:p-5 overflow-hidden transition-shadow hover:shadow-md"
+         style={{ border: `1px solid ${T.hair}`, boxShadow: '0 1px 2px rgba(15,23,42,0.04)' }}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[13px] font-medium leading-snug" style={{ color: T.muted }}>{label}</p>
+        {icon && (
+          <span className="flex items-center justify-center rounded-xl flex-shrink-0"
+                style={{ width: 38, height: 38, background: `${accent}14`, color: accent }}>
+            {icon}
+          </span>
+        )}
       </div>
-      <p className="font-bold mt-1.5" style={{ fontSize: 28, letterSpacing: '-0.02em', color: T.ink }}>{value}</p>
-      {hint && <p className="text-xs mt-0.5" style={{ color: T.muted }}>{hint}</p>}
+      <p className="font-bold mt-1" style={{ fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.03em', color: T.ink }}>{value}</p>
+      {hint && <p className="text-xs mt-1.5" style={{ color: T.muted }}>{hint}</p>}
+      <span className="absolute left-0 right-0 bottom-0" style={{ height: 3, background: accent, opacity: 0.85 }} />
     </div>
   );
 }

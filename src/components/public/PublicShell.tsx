@@ -82,7 +82,7 @@ export function PublicShell({ chamberId, active, title, subtitle, children }: {
               {camara ? ['Poder Legislativo Municipal', `${camara.city}/${camara.state}`, legislatura].filter(Boolean).join(' · ') : ' '}
             </p>
           </div>
-          {liveSession && (
+          {liveSession && active !== 'sessoes' && (
             <Link href={`/publico/${chamberId}/sessao/${liveSession}`}
                   className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-bold flex-shrink-0"
                   style={{ background: 'rgba(5,150,105,0.08)', color: '#047857', border: '1px solid rgba(5,150,105,0.25)' }}>

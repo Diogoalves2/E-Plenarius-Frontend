@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, Download, Search, ChevronRight, Vote, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Download, Search, ChevronRight, Vote, FileSpreadsheet, CheckCircle2, XCircle, ListChecks } from 'lucide-react';
 import { PublicShell, publicGet, PUBLIC_API, PUBLIC_MEDIA, STATUS_PUB, ROLE_PUB, T, dataPub } from '@/components/public/PublicShell';
 import {
   useTip, StatTile, Legend, ChartCard, DataTable, StackedBar, MonthlyColumns, fillMonths, monthLabel, Avatar,
@@ -89,10 +89,10 @@ export default function VotacoesPublicoPage() {
           ) : tot && est && (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <StatTile label="Votações concluídas" value={tot.votacoes} hint={`em ${tot.sessoes} sessão(ões)`} />
-                <StatTile label="Aprovadas" value={tot.aprovadas} hint={`${pct(tot.aprovadas, tot.votacoes)} das votações`} accent={T.sim} />
-                <StatTile label="Rejeitadas" value={tot.rejeitadas} hint={`${pct(tot.rejeitadas, tot.votacoes)} das votações`} accent={T.nao} />
-                <StatTile label="Votações nominais" value={tot.nominais}
+                <StatTile label="Votações concluídas" value={tot.votacoes} hint={`em ${tot.sessoes} sessão(ões)`} icon={<Vote size={19} />} />
+                <StatTile label="Aprovadas" value={tot.aprovadas} hint={`${pct(tot.aprovadas, tot.votacoes)} das votações`} accent={T.sim} icon={<CheckCircle2 size={19} />} />
+                <StatTile label="Rejeitadas" value={tot.rejeitadas} hint={`${pct(tot.rejeitadas, tot.votacoes)} das votações`} accent={T.nao} icon={<XCircle size={19} />} />
+                <StatTile label="Votações nominais" value={tot.nominais} accent="#7C3AED" icon={<ListChecks size={19} />}
                           hint={tot.secretas ? `${tot.secretas} secreta(s), sem voto individual` : 'todas com voto aberto'} />
               </div>
 

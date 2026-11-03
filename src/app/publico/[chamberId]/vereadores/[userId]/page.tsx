@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ArrowLeft, ChevronRight, CalendarCheck2, Vote, Target, FileText } from 'lucide-react';
 import { PublicShell, publicGet, PUBLIC_MEDIA, STATUS_PUB, CHOICE_PUB, ROLE_PUB, T } from '@/components/public/PublicShell';
 import { Avatar, ChartCard, DataTable, Legend, StackedBar, StatTile, useTip } from '@/components/public/charts';
 
@@ -58,10 +58,10 @@ export default function PerfilVereadorPage() {
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatTile label="Presença" value={p.taxaPresenca == null ? '—' : `${p.taxaPresenca}%`} hint={`${p.presencas} de ${p.sessoes} sessões`} />
-            <StatTile label="Votou nas nominais" value={v ? `${votou}/${v.elegiveis}` : '—'} hint="votações abertas" />
-            <StatTile label="Acompanhou o resultado" value={r?.alinhamento == null ? '—' : `${r.alinhamento}%`} hint="dos votos sim/não" />
-            <StatTile label="Matérias de autoria" value={r?.autorias.total ?? p.autorias.length} hint={`${r?.autorias.aprovadas ?? 0} aprovada(s)`} />
+            <StatTile icon={<CalendarCheck2 size={19} />} label="Presença" value={p.taxaPresenca == null ? '—' : `${p.taxaPresenca}%`} hint={`${p.presencas} de ${p.sessoes} sessões`} />
+            <StatTile icon={<Vote size={19} />} accent="#0891B2" label="Votou nas nominais" value={v ? `${votou}/${v.elegiveis}` : '—'} hint="votações abertas" />
+            <StatTile icon={<Target size={19} />} accent="#7C3AED" label="Acompanhou o resultado" value={r?.alinhamento == null ? '—' : `${r.alinhamento}%`} hint="dos votos sim/não" />
+            <StatTile icon={<FileText size={19} />} accent={T.sim} label="Matérias de autoria" value={r?.autorias.total ?? p.autorias.length} hint={`${r?.autorias.aprovadas ?? 0} aprovada(s)`} />
           </div>
 
           {v && (

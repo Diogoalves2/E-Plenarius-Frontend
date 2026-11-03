@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CalendarDays, ChevronRight, Loader2, Radio, History, CalendarClock } from 'lucide-react';
+import { CalendarDays, ChevronRight, Loader2, Radio, History, CalendarClock, CalendarCheck2, Vote, CheckCircle2 } from 'lucide-react';
 import { PublicShell, publicGet, T, dataPub } from '@/components/public/PublicShell';
 import { StatTile } from '@/components/public/charts';
 
@@ -50,10 +50,14 @@ export default function PublicoPage() {
       {loading ? <div className="flex justify-center py-20"><Loader2 className="animate-spin" size={24} color={T.muted} /></div> : (
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatTile label="Sessões realizadas" value={encerradas.length} />
-            <StatTile label="Próximas sessões" value={agendadas.length} />
-            <StatTile label="Matérias votadas" value={totais?.votacoes ?? 0} />
-            <StatTile label="Matérias aprovadas" value={totais?.aprovadas ?? 0} accent={T.sim} />
+            <StatTile label="Sessões realizadas" value={encerradas.length} icon={<CalendarCheck2 size={19} />} accent={T.accent}
+                      hint={ativa ? '+1 acontecendo agora' : encerradas.length ? 'sessões encerradas' : 'nenhuma encerrada ainda'} />
+            <StatTile label="Próximas sessões" value={agendadas.length} icon={<CalendarClock size={19} />} accent="#7C3AED"
+                      hint={agendadas[0] ? `próxima: ${dataPub(agendadas[0].date, { day: '2-digit', month: 'short' })}` : 'nenhuma agendada'} />
+            <StatTile label="Matérias votadas" value={totais?.votacoes ?? 0} icon={<Vote size={19} />} accent="#0891B2"
+                      hint="votações concluídas" />
+            <StatTile label="Matérias aprovadas" value={totais?.aprovadas ?? 0} icon={<CheckCircle2 size={19} />} accent={T.sim}
+                      hint={totais?.votacoes ? `${Math.round((totais.aprovadas / totais.votacoes) * 100)}% das votadas` : 'sem votações ainda'} />
           </div>
 
           {ativa && (
