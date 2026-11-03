@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Table2, BarChart3 } from 'lucide-react';
 import { T } from './PublicShell';
 
@@ -241,9 +241,11 @@ export function MonthlyColumns({ data, tip }: {
 }
 
 export function Avatar({ src, initials, size = 36 }: { src: string | null; initials: string | null; size?: number }) {
-  return src
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [src]);
+  return src && !broken
     /* eslint-disable-next-line @next/next/no-img-element */
-    ? <img src={src} alt="" className="rounded-full object-cover flex-shrink-0" style={{ width: size, height: size }} />
+    ? <img src={src} alt="" onError={() => setBroken(true)} className="rounded-full object-cover flex-shrink-0" style={{ width: size, height: size }} />
     : <div className="rounded-full flex items-center justify-center font-bold text-white flex-shrink-0"
            style={{ width: size, height: size, background: T.accent, fontSize: size * 0.36 }}>{initials}</div>;
 }

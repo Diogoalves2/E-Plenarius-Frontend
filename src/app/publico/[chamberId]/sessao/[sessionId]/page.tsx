@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Users, FileText, CheckCircle, XCircle, Loader2, Radio } from 'lucide-react';
 import Link from 'next/link';
-import { PublicShell } from '@/components/public/PublicShell';
+import { PublicShell, PUBLIC_MEDIA } from '@/components/public/PublicShell';
+import { Avatar } from '@/components/public/charts';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -199,15 +200,5 @@ function CardHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
 }
 
 function MiniAvatar({ user }: { user: Presence['user'] }) {
-  const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
-  const color = colors[user.name.charCodeAt(0) % colors.length];
-  if (user.avatarUrl) {
-    return <img src={user.avatarUrl} alt={user.name} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />;
-  }
-  return (
-    <div style={{ width: 32, height: 32, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: 11, fontWeight: 700 }}>
-      {user.initials || user.name.slice(0, 2).toUpperCase()}
-    </div>
-  );
+  return <Avatar src={user.avatarUrl ? `${PUBLIC_MEDIA}${user.avatarUrl}` : null} initials={user.initials || user.name.slice(0, 2).toUpperCase()} size={32} />;
 }

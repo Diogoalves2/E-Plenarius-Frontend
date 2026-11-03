@@ -125,7 +125,7 @@ As sessões abertas no painel serão encerradas e, no próximo login, será prec
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}>
                   <Pencil size={13} />
                 </button>
-                {v.role === 'presidente' && v.mfaEnabledAt && (
+                {(v.role === 'presidente' || v.role === 'vice_presidente') && v.mfaEnabledAt && (
                   <button onClick={() => resetMfa(v)} title="Redefinir verificação em duas etapas (celular perdido)"
                           className="p-1.5 rounded-lg transition-colors" style={{ color: '#8A94A2' }}
                           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(217,119,6,0.08)'; e.currentTarget.style.color = '#D97706'; }}

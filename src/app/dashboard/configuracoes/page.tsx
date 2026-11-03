@@ -11,6 +11,24 @@ import {
 } from '@/lib/legislativo';
 
 
+const ipv4 = (ip: string) => {
+  const p = ip.split('.').map(Number);
+  return p.length === 4 && p.every(n => Number.isInteger(n) && n >= 0 && n <= 255)
+    ? ((p[0] << 24) >>> 0) + (p[1] << 16) + (p[2] << 8) + p[3] : null;
+};
+
+/** IPv4: confere a faixa de verdade; IPv6: compara o prefixo escrito (aproximação só para o aviso). */
+function ipCovered(ip: string, net: string): boolean {
+  const [addr, bits] = net.split('/');
+  if (!bits) return addr === ip;
+  const a = ipv4(ip), b = ipv4(addr);
+  if (a !== null && b !== null) {
+    const mask = Number(bits) === 0 ? 0 : (~0 << (32 - Number(bits))) >>> 0;
+    return ((a & mask) >>> 0) === ((b & mask) >>> 0);
+  }
+  return ip.includes(':') && ip.toLowerCase().startsWith(addr.toLowerCase().replace(/::$/, ':'));
+}
+
 const slug = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
 
@@ -23,6 +41,9 @@ export default function ConfiguracoesPage() {
   const [byType, setByType] = useState<Record<string, Majority>>({});
   const [requirePin, setRequirePin] = useState(false);
   const [autoMic, setAutoMic] = useState(false);
+  const [netOnly, setNetOnly] = useState(false);
+  const [networks, setNetworks] = useState('');
+  const [myIp, setMyIp] = useState<string | null>(null);
   const [phases, setPhases] = useState<SessionPhase[]>(DEFAULT_PHASES);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -36,8 +57,19 @@ export default function ConfiguracoesPage() {
     setByType(rules.majorityByType ?? {});
     setRequirePin(rules.requirePinToVote);
     setAutoMic(rules.autoOpenMic);
+    setNetOnly(rules.votingNetworkOnly);
+    setNetworks((rules.votingNetworks ?? []).join('\n'));
     setPhases(rules.sessionPhases);
   }, [rules]);
+
+  useEffect(() => {
+    if (!user?.chamberId) return;
+    api.get(`/chambers/${user.chamberId}/my-ip`).then(r => setMyIp(r.data.ip)).catch(() => {});
+  }, [user?.chamberId]);
+
+  const networkList = networks.split(/[\s,;]+/).map(n => n.trim()).filter(Boolean);
+  // Só para o aviso na tela (quem decide é o servidor): o IP atual está coberto pela lista?
+  const myIpListed = !!myIp && networkList.some(n => ipCovered(myIp, n));
 
   const effectiveSeats = Number(seats) || rules?.seats || 0;
 
@@ -51,6 +83,8 @@ export default function ConfiguracoesPage() {
         defaultQuorum: quorum ? Number(quorum) : null,
         majorityByType: Object.fromEntries(Object.entries(byType).filter(([, m]) => m !== 'simples')),
         requirePinToVote: requirePin,
+        votingNetworkOnly: netOnly,
+        votingNetworks: networkList,
         autoOpenMic: autoMic,
         sessionPhases: phases.map(p => ({ key: p.key, label: p.label.trim() || p.key })),
       });
@@ -128,6 +162,33 @@ export default function ConfiguracoesPage() {
       <Card title="SEGURANÇA E PLENÁRIO">
         <Toggle checked={requirePin} onChange={setRequirePin} label="Confirmar cada voto com o PIN do vereador"
                 help="Ao tocar em SIM/NÃO/ABSTER, o vereador digita o PIN. Impede voto em tablet deixado aberto." />
+        <Toggle checked={netOnly} onChange={setNetOnly} label="Votar e registrar presença só pela rede da Câmara"
+                help="Voto e presença só são aceitos a partir da internet da Câmara (os tablets precisam usar o Wi-Fi da Casa, não 4G). Bloqueia até tablet levado para fora." />
+        {(netOnly || networkList.length > 0) && (
+          <div className="ml-7 mb-2">
+            <Label text="Redes da Câmara (IP ou faixa, um por linha)"
+                   help="Ex.: 200.150.10.20 ou 200.150.10.0/24. Para IPv6, use a faixa (ex.: 2804:abcd:1234::/48). Se a operadora trocar o IP da Câmara, atualize aqui.">
+              <textarea value={networks} onChange={e => setNetworks(e.target.value)} rows={3}
+                        className="w-full px-3 py-2 rounded-lg text-sm font-mono-jet outline-none" style={iStyle} />
+            </Label>
+            {myIp && (
+              <div className="flex flex-wrap items-center gap-2 mt-2 text-xs" style={{ color: '#4B5563' }}>
+                <span>Sua rede agora: <b className="font-mono-jet">{myIp}</b></span>
+                {!myIpListed && (
+                  <button type="button" onClick={() => setNetworks(v => (v.trim() ? `${v.trim()}\n` : '') + myIp)}
+                          className="px-2 py-1 rounded-md font-semibold" style={{ border: '1px solid rgba(20,71,230,0.3)', color: '#1447E6' }}>
+                    Adicionar esta rede
+                  </button>
+                )}
+              </div>
+            )}
+            {netOnly && myIp && !myIpListed && (
+              <p className="text-xs mt-2 font-semibold" style={{ color: '#B45309' }}>
+                Atenção: a rede de onde você está agora não está na lista. Se você estiver na Câmara, adicione-a antes de salvar, ou os tablets daqui não conseguirão votar.
+              </p>
+            )}
+          </div>
+        )}
         <Toggle checked={autoMic} onChange={setAutoMic} label="Microfone automático"
                 help="Liberar o tempo de fala abre o canal do orador na mesa de som; encerrar fecha. Requer o bridge atualizado e canal cadastrado em Vereadores." />
       </Card>

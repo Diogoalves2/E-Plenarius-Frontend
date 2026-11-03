@@ -13,6 +13,8 @@ export interface ChamberRules {
   majorityByType: Record<string, Majority>;
   defaultQuorum: number;
   requirePinToVote: boolean;
+  votingNetworkOnly: boolean;
+  votingNetworks: string[];
   autoOpenMic: boolean;
   sessionPhases: SessionPhase[];
 }
