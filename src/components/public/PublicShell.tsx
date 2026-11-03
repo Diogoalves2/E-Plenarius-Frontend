@@ -68,12 +68,11 @@ export function PublicShell({ chamberId, active, title, subtitle, children }: {
 
       <header className="bg-white" style={{ borderBottom: `1px solid ${T.hair}` }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-6 flex items-center gap-4">
-          <div className="flex-shrink-0 rounded-2xl flex items-center justify-center overflow-hidden"
-               style={{ width: 64, height: 64, background: '#F8FAFC', border: `1px solid ${T.hair}` }}>
+          <div className="flex-shrink-0 flex items-center justify-center" style={{ width: 64, height: 64 }}>
             {camara?.logoUrl
               /* eslint-disable-next-line @next/next/no-img-element */
-              ? <img src={`${PUBLIC_MEDIA}${camara.logoUrl}`} alt={`Brasão da ${camara.name}`} style={{ width: 56, height: 56, objectFit: 'contain' }} />
-              : <Landmark size={28} color={T.accent} />}
+              ? <img src={`${PUBLIC_MEDIA}${camara.logoUrl}`} alt={`Brasão da ${camara.name}`} style={{ width: 64, height: 64, objectFit: 'contain' }} />
+              : <Landmark size={34} color={T.accent} />}
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="font-bold leading-tight truncate" style={{ fontSize: 'clamp(18px, 3vw, 24px)', letterSpacing: '-0.02em' }}>
