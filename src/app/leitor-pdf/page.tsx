@@ -47,23 +47,34 @@ function Leitor() {
         host.innerHTML = '';
         const width = host.clientWidth;
         // Nitidez também ao ampliar com os dedos (limitado para não pesar no tablet)
-        const quality = Math.min((window.devicePixelRatio || 1) * 1.6, 3);
+        const quality = Math.min((window.devicePixelRatio || 1) * 1.25, 2.5);
 
         const render = async (n: number, canvas: HTMLCanvasElement) => {
-          if (canvas.dataset.done) return;
-          canvas.dataset.done = '1';
+          if (canvas.dataset.state) return;
+          canvas.dataset.state = 'loading';
           const page = await doc.getPage(n);
+          if (canvas.dataset.state !== 'loading') return; // liberada enquanto carregava
           const base = page.getViewport({ scale: 1 });
-          const scale = (width / base.width) * quality;
-          const vp = page.getViewport({ scale });
+          const vp = page.getViewport({ scale: (width / base.width) * quality });
           canvas.width = Math.floor(vp.width);
           canvas.height = Math.floor(vp.height);
           await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise;
+          canvas.dataset.state = 'done';
+        };
+        // Página longe da tela devolve a memória (uma página nítida ocupa ~10–20 MB)
+        const release = (canvas: HTMLCanvasElement) => {
+          if (!canvas.dataset.state) return;
+          delete canvas.dataset.state;
+          canvas.width = 0;
+          canvas.height = 0;
         };
 
+        // 1º monta todas as páginas vazias (com a proporção certa), só depois observa:
+        // senão cada página recém-criada "está na tela" e o documento inteiro seria desenhado.
+        const canvases: HTMLCanvasElement[] = [];
         for (let n = 1; n <= doc.numPages; n++) {
-          const page = await doc.getPage(n);
-          const vp = page.getViewport({ scale: 1 });
+          const vp = (await doc.getPage(n)).getViewport({ scale: 1 });
+          if (cancelled) return;
           const wrap = document.createElement('div');
           wrap.className = 'pdf-page';
           wrap.dataset.n = String(n);
@@ -71,18 +82,22 @@ function Leitor() {
           const canvas = document.createElement('canvas');
           wrap.appendChild(canvas);
           host.appendChild(wrap);
-          // Renderiza só o que está perto da tela (documentos longos não travam o tablet)
-          const io = new IntersectionObserver(entries => {
-            for (const e of entries) {
-              if (e.isIntersecting) {
-                render(n, canvas).catch(() => {});
-                setCurrent(c => (e.intersectionRatio > 0.4 ? n : c));
-              }
-            }
-          }, { rootMargin: '600px 0px', threshold: [0, 0.4] });
-          io.observe(wrap);
-          observers.push(io);
+          canvases.push(canvas);
         }
+
+        const near = new IntersectionObserver(entries => {
+          for (const e of entries) {
+            const n = Number((e.target as HTMLElement).dataset.n);
+            const canvas = canvases[n - 1];
+            if (e.isIntersecting) render(n, canvas).catch(() => { delete canvas.dataset.state; });
+            else release(canvas);
+          }
+        }, { rootMargin: '1200px 0px' });
+        const visible = new IntersectionObserver(entries => {
+          for (const e of entries) if (e.isIntersecting) setCurrent(Number((e.target as HTMLElement).dataset.n));
+        }, { threshold: 0.5 });
+        for (const c of canvases) { near.observe(c.parentElement!); visible.observe(c.parentElement!); }
+        observers.push(near, visible);
       } catch {
         if (!cancelled) setError('Não foi possível abrir o documento.');
       }
