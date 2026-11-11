@@ -151,7 +151,7 @@ export default function TelaoPage() {
     ? ((chamberInfo?.sessionPhases?.length ? chamberInfo.sessionPhases : DEFAULT_PHASES).find(p => p.key === phase)?.label ?? null)
     : null;
 
-  const { activeItem, counts, countsHidden, totalVotes, voteLog } = useVoting(sessionId, socket);
+  const { activeItem, counts, countsHidden, totalVotes, voteLog, reload: reloadVoting } = useVoting(sessionId, socket);
   const { expedienteAtivo, aparteAtivo } = useExpediente(sessionId);
   const { needsActivation: soundNeedsActivation, activate: activateSound } = useVotingSounds(socket);
   const { needsActivation: expedienteSoundNeedsActivation } = useExpedienteSounds(socket);
@@ -207,16 +207,17 @@ export default function TelaoPage() {
 
   useEffect(() => {
     if (!socket) return;
-    const onConnect = () => { fetchQuorum(); fetchSessionInfo(); };
+    const onConnect = () => { fetchQuorum(); fetchSessionInfo(); reloadVoting(); };
     socket.on('connect', onConnect);
     return () => { socket.off('connect', onConnect); };
-  }, [socket, fetchQuorum, fetchSessionInfo]);
+  }, [socket, fetchQuorum, fetchSessionInfo, reloadVoting]);
 
   useEffect(() => {
     if (!sessionId) return;
-    const id = setInterval(() => { fetchSessionInfo(); fetchQuorum(); }, 30_000);
+    // Ressincroniza sozinho: o telão nunca precisa ser recarregado (recarregar sai da tela cheia)
+    const id = setInterval(() => { fetchSessionInfo(); fetchQuorum(); reloadVoting(); }, 30_000);
     return () => clearInterval(id);
-  }, [sessionId, fetchSessionInfo, fetchQuorum]);
+  }, [sessionId, fetchSessionInfo, fetchQuorum, reloadVoting]);
 
   useEffect(() => {
     if (!socket) return;
@@ -336,6 +337,11 @@ function Kiosk({ children, soundNeeded, onActivateSound, offline }: {
                   style={{ padding: `${u(12)} ${u(20)}`, fontSize: u(18), background: C.amber, color: '#0B0D10' }}>
             <Volume2 style={{ width: u(20), height: u(20) }} /> Clique para ativar o som
           </button>
+        )}
+        {!fs && (
+          <span className="rounded-full" style={{ padding: `${u(12)} ${u(18)}`, fontSize: u(16), color: C.muted, background: 'rgba(0,0,0,0.5)' }}>
+            Dica: F11 mantém a tela cheia mesmo se a página recarregar
+          </span>
         )}
         <button onClick={toggleFs} title={fs ? 'Sair da tela cheia' : 'Tela cheia'} className="flex items-center gap-2 rounded-full font-semibold"
                 style={{ padding: `${u(12)} ${u(20)}`, fontSize: u(18), background: 'rgba(255,255,255,0.1)', color: C.text, border: `1px solid ${C.border}` }}>
