@@ -14,6 +14,7 @@ import { PhaseBar } from '@/components/session/PhaseBar';
 import { MAJORITY_LABEL, requiredVotes, useChamberRules } from '@/lib/legislativo';
 import Link from 'next/link';
 import { canConductSession } from '@/lib/auth';
+import { useDialog } from '@/components/ui/Dialog';
 
 const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api\/?$/, '');
 
@@ -36,6 +37,7 @@ export default function VotacaoAoVivoPage() {
   const [actionError, setActionError] = useState<{ message: string; tie?: boolean } | null>(null);
   const { rules } = useChamberRules(user?.chamberId);
   const heroRef = useRef<HTMLDivElement>(null);
+  const dialog = useDialog();
 
   const { socket, connected } = useSocket(sessionId);
   const { agenda, activeItem, counts, countsHidden, totalVotes, voteLog, loading, openVoting, closeVoting } = useVoting(sessionId, socket);
@@ -260,7 +262,15 @@ export default function VotacaoAoVivoPage() {
                       </button>
                     )}
                     {view.status === 'pendente' && (
-                      <button onClick={() => runAction(() => openVoting(view.id))} disabled={!!votingNow}
+                      <button disabled={!!votingNow}
+                              onClick={async () => {
+                                const ok = await dialog.confirm({
+                                  title: 'Abrir votação?',
+                                  message: <><b style={{ color: '#0B1220' }}>{view.number}</b> · {view.title}<br />Os vereadores presentes poderão votar a partir de agora.</>,
+                                  confirmLabel: 'Abrir votação',
+                                });
+                                if (ok) runAction(() => openVoting(view.id));
+                              }}
                               title={votingNow ? 'Encerre a votação em andamento primeiro' : undefined}
                               className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold transition-opacity enabled:hover:opacity-90 disabled:cursor-not-allowed"
                               style={votingNow ? { background: '#EFF1F4', color: '#8A94A2' } : { background: '#1447E6', color: '#fff' }}>
@@ -268,19 +278,10 @@ export default function VotacaoAoVivoPage() {
                       </button>
                     )}
                     {(isVoted || view.status === 'retirado') && (
-                      <>
-                        <button disabled className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
-                                style={{ background: '#EFF1F4', color: '#8A94A2' }}>
-                          <Lock size={13} /> {view.status === 'retirado' ? 'Retirado de pauta' : 'Já votado'}
-                        </button>
-                        {nextPending && (
-                          <button onClick={() => go(nextPending.id)}
-                                  className="flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-blue-50"
-                                  style={{ border: '1px solid rgba(20,71,230,0.25)', color: '#1447E6' }}>
-                            Próximo projeto <ChevronRight size={14} />
-                          </button>
-                        )}
-                      </>
+                      <button disabled className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold cursor-not-allowed"
+                              style={{ background: '#EFF1F4', color: '#8A94A2' }}>
+                        <Lock size={13} /> {view.status === 'retirado' ? 'Retirado de pauta' : 'Já votado'}
+                      </button>
                     )}
                   </div>
                 )}
@@ -359,6 +360,18 @@ export default function VotacaoAoVivoPage() {
                       {view.resultExplanation || `${vCounts.sim} a ${vCounts.nao} · ${vCounts.abstencao} abstenção(ões)`}
                     </div>
                   </div>
+                )}
+                {isVoted && nextPending && (
+                  <button onClick={() => { go(nextPending.id); heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
+                          className="mt-3 w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors hover:bg-gray-50"
+                          style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-mono-jet tracking-wider" style={{ color: '#8A94A2' }}>PRÓXIMO DA PAUTA</div>
+                      <div className="text-sm font-semibold truncate" style={{ color: '#0B1220' }}>{nextPending.number}</div>
+                      <div className="text-xs truncate" style={{ color: '#8A94A2' }}>{nextPending.title}</div>
+                    </div>
+                    <ChevronRight size={16} style={{ color: '#1447E6', flexShrink: 0 }} />
+                  </button>
                 )}
               </div>
 
