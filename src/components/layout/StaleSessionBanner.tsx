@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChamber } from '@/contexts/ChamberContext';
 
@@ -18,15 +18,19 @@ export function StaleSessionBanner() {
   if (since >= today) return null;
 
   return (
-    <div className="flex items-start sm:items-center gap-3 px-4 sm:px-6 py-2.5 text-sm"
-         style={{ background: '#FFFBEB', borderBottom: '1px solid #FDE68A', color: '#78350F' }}>
-      <AlertTriangle size={17} className="flex-shrink-0 mt-0.5 sm:mt-0" style={{ color: '#D97706' }} />
-      <span className="flex-1">
-        <b>Sessão aberta desde {since.toLocaleDateString('pt-BR')}.</b>{' '}
-        Enquanto estiver aberta, aceita presença e votos. Se ela já terminou, encerre-a. Sessões sem atividade por 12 h são encerradas automaticamente.
+    <div className="flex items-center gap-3 px-4 sm:px-8 h-10 text-[13px] flex-shrink-0"
+         style={{ background: '#FFFDF7', borderBottom: '1px solid rgba(217,119,6,0.14)' }}>
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#F59E0B' }} />
+      <span className="min-w-0 truncate" style={{ color: '#475569' }}>
+        <span className="font-semibold" style={{ color: '#0B1220' }}>
+          Sessão aberta desde {since.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+        </span>
+        <span className="hidden md:inline"> · encerra sozinha após 12 h sem atividade</span>
       </span>
-      <Link href="/dashboard/sessoes" className="flex-shrink-0 font-semibold underline underline-offset-2" style={{ color: '#92400E' }}>
-        Ir para Sessões
+      <Link href="/dashboard/sessoes"
+            className="ml-auto flex items-center gap-1 font-semibold flex-shrink-0 transition-opacity hover:opacity-70"
+            style={{ color: '#B45309' }}>
+        Encerrar <ArrowRight size={13} />
       </Link>
     </div>
   );

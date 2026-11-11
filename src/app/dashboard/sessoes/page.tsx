@@ -124,8 +124,14 @@ export default function SessoesPage() {
                     {s.scheduledAt && ' · ' + new Date(s.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold font-mono-jet flex-shrink-0"
+                <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-semibold font-mono-jet flex-shrink-0"
                       style={{ background: st.bg, color: st.color }}>
+                  {s.status === 'em_andamento' && (
+                    <span className="relative flex w-1.5 h-1.5">
+                      <span className="absolute inset-0 rounded-full animate-ping opacity-60" style={{ background: st.color }} />
+                      <span className="relative w-1.5 h-1.5 rounded-full" style={{ background: st.color }} />
+                    </span>
+                  )}
                   {st.label}
                 </span>
                 {canConduct && s.status === 'agendada' && (
@@ -138,10 +144,14 @@ export default function SessoesPage() {
                 )}
                 {canConduct && s.status === 'em_andamento' && (
                   <button onClick={() => endSession(s.id)} disabled={!!isRunning}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                          style={{ background: '#dc2626', opacity: isRunning ? 0.7 : 1 }}>
-                    {isRunning ? <Loader2 size={12} className="animate-spin" /> : <Square size={12} />}
-                    Encerrar
+                          className="group flex items-center gap-2 pl-2.5 pr-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors bg-white hover:bg-red-50 disabled:opacity-60"
+                          style={{ border: '1px solid rgba(220,38,38,0.22)', color: '#B91C1C' }}>
+                    {isRunning
+                      ? <Loader2 size={13} className="animate-spin" />
+                      : <span className="flex items-center justify-center w-[18px] h-[18px] rounded-full transition-colors bg-red-50 group-hover:bg-red-100">
+                          <Square size={7} fill="currentColor" strokeWidth={0} />
+                        </span>}
+                    Encerrar sessão
                   </button>
                 )}
                 {s.status === 'encerrada' && (
