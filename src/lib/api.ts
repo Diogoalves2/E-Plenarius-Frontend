@@ -92,9 +92,11 @@ api.interceptors.response.use(
       try {
         const session = await refreshSession();
         if (!session) {
-          // Portal público e ata não têm login: não mandar para /login.
+          // Login acabou: avisa o app (o telão fecha) e manda para /login, exceto em
+          // portal público/ata (sem login) e telão (TV nunca mostra a tela de login).
+          window.dispatchEvent(new Event('eplenarius:logged-out'));
           const p = window.location.pathname;
-          if (!p.startsWith('/publico') && !p.startsWith('/ata')) window.location.href = '/login';
+          if (!p.startsWith('/publico') && !p.startsWith('/ata') && !p.startsWith('/telao')) window.location.href = '/login';
           return Promise.reject(error);
         }
         original.headers.Authorization = `Bearer ${session.accessToken}`;

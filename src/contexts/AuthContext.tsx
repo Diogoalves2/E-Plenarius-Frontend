@@ -3,7 +3,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthUser, LoginResult, login as apiLogin, logout as apiLogout, clearLegacyStorage } from '@/lib/auth';
-import api, { refreshSession } from '@/lib/api';
+import api, { refreshSession, setAccessToken } from '@/lib/api';
+
+/** Avisa as outras abas do mesmo navegador (painel, telão) sobre login/logout. */
+const AUTH_CHANNEL = 'eplenarius-auth';
+function broadcast(msg: 'login' | 'logout') {
+  try { const c = new BroadcastChannel(AUTH_CHANNEL); c.postMessage(msg); c.close(); } catch { /* navegador sem suporte */ }
+}
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -52,8 +58,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Logout em uma aba encerra todas (o telão some junto); login em uma aba reabre as outras.
+  useEffect(() => {
+    const out = () => { setAccessToken(null); setUser(null); };
+    let ch: BroadcastChannel | null = null;
+    try {
+      ch = new BroadcastChannel(AUTH_CHANNEL);
+      ch.onmessage = e => {
+        if (e.data === 'logout') out();
+        if (e.data === 'login') refreshSession().then(s => { if (s) setUser(toAuthUser(s.user)); }).catch(() => {});
+      };
+    } catch { /* navegador sem suporte */ }
+    window.addEventListener('eplenarius:logged-out', out);
+    return () => { ch?.close(); window.removeEventListener('eplenarius:logged-out', out); };
+  }, []);
+
   const finishLogin = useCallback((u: AuthUser) => {
     setUser(toAuthUser(u));
+    broadcast('login');
     router.push(u.role === 'superadmin' ? '/superadmin' : '/dashboard');
   }, [router]);
 
@@ -66,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     await apiLogout();
     setUser(null);
+    broadcast('logout');
     router.push('/login');
   }
 

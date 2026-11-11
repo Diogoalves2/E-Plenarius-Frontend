@@ -62,7 +62,27 @@ function fmtElapsed(total: number) {
 const mediaUrl = (p: string | null | undefined) => (p ? (p.startsWith('http') ? p : `${MEDIA}${p}`) : null);
 const shortName = (n: string) => n.split(' ').slice(0, 2).join(' ');
 
+/**
+ * Telão só existe com login do painel neste navegador. Sem login (ou logout no painel,
+ * mesmo com sessão em andamento) a tela inteira é desmontada: sem dados, sem conexão ao vivo.
+ */
 export default function TelaoPage() {
+  const { user, loading, refreshUser } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  // Confere o login a cada minuto (login expirado ou revogado fecha o telão)
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => { refreshUser(); }, 60_000);
+    return () => clearInterval(id);
+  }, [user, refreshUser]);
+
+  if (!mounted || loading) return <div className="w-screen h-screen" style={{ background: C.bg }} />;
+  if (!user?.chamberId) return <Restricted />;
+  return <TelaoScreen key={user.id} />;
+}
+
+function TelaoScreen() {
   const [mounted, setMounted] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
@@ -76,7 +96,7 @@ export default function TelaoPage() {
 
   // Telão não é público: abre no computador do painel (logado) e é espelhado na TV.
   // Mostra a Câmara de quem está logado e entra sozinho na sessão em andamento.
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const camaraId = user?.chamberId ?? null;
   useEffect(() => {
     if (!camaraId) return;
@@ -243,8 +263,7 @@ export default function TelaoPage() {
     return () => clearTimeout(t);
   }, [connected, sessionId]);
 
-  if (!mounted || authLoading) return <div className="w-screen h-screen" style={{ background: C.bg }} />;
-  if (!user || !camaraId) return <Restricted />;
+  if (!mounted || !camaraId) return <div className="w-screen h-screen" style={{ background: C.bg }} />;
 
   const live = !!sessionId && (!sessionInfo || sessionInfo.status === undefined || sessionInfo.status === 'em_andamento');
   const presentCount = vereadores.filter(v => presentes.has(v.id)).length;
