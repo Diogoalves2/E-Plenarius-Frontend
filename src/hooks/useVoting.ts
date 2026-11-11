@@ -47,8 +47,7 @@ export interface LiveVoteEvent {
 }
 
 async function fetchVotesForItem(item: AgendaItem): Promise<LiveVoteEvent[]> {
-  // Lista de votos exige login. Telão sem login acompanha os votos pelo socket;
-  // chamar aqui daria 401 e o redirecionamento para /login tirava o telão da tela cheia.
+  // Lista de votos exige login (painel e telão têm; sem login, só o socket).
   if (!getAccessToken()) return [];
   try {
     const { data } = await api.get(`/voting/item/${item.id}/votes`);

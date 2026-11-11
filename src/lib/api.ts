@@ -43,10 +43,15 @@ let refreshing: Promise<SessionData | null> | null = null;
  * Renova a sessão pelo cookie HttpOnly. Uma renovação por vez (várias requisições que
  * recebem 401 juntas esperam a mesma). null = sessão encerrada (fazer login).
  * Erro de rede/servidor lança 'refresh-transient' e não desloga.
+ *
+ * Também uma por vez ENTRE ABAS (painel + telão no mesmo navegador): o cookie é único e
+ * rotaciona a cada uso; duas abas mandando o mesmo token juntas o servidor trata como
+ * roubo e revoga tudo. Com a trava, a segunda aba espera e já envia o cookie novo.
  */
 export function refreshSession(): Promise<SessionData | null> {
   if (!refreshing) {
-    refreshing = (async () => {
+    const locks = typeof navigator !== 'undefined' ? (navigator as any).locks : undefined;
+    const run = async (): Promise<SessionData | null> => {
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           const { data } = await authApi.post('/refresh', {}, { timeout: 15000 });
@@ -66,7 +71,9 @@ export function refreshSession(): Promise<SessionData | null> {
         }
       }
       throw new Error('refresh-transient');
-    })().finally(() => { refreshing = null; });
+    };
+    refreshing = (locks?.request ? (locks.request('eplenarius-refresh', run) as Promise<SessionData | null>) : run())
+      .finally(() => { refreshing = null; });
   }
   return refreshing;
 }
@@ -85,9 +92,9 @@ api.interceptors.response.use(
       try {
         const session = await refreshSession();
         if (!session) {
-          // Telão e portal público não têm login: nunca navegar (sairia da tela cheia).
+          // Portal público e ata não têm login: não mandar para /login.
           const p = window.location.pathname;
-          if (!p.startsWith('/telao') && !p.startsWith('/publico') && !p.startsWith('/ata')) window.location.href = '/login';
+          if (!p.startsWith('/publico') && !p.startsWith('/ata')) window.location.href = '/login';
           return Promise.reject(error);
         }
         original.headers.Authorization = `Bearer ${session.accessToken}`;

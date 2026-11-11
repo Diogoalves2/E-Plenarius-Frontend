@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Video, Copy, Check, ExternalLink, Monitor, AlertCircle,
+  Video, Check, ExternalLink, Monitor, AlertCircle,
   MonitorPlay, Save, Loader2, Trash2, Upload, Link,
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -17,7 +17,6 @@ interface ActiveSession {
   youtubeThumbnailUrl?: string | null;
 }
 
-const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL ?? 'http://localhost:3000';
 const MEDIA = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api\/?$/, '');
 
 function extractYoutubeId(url: string): string | null {
@@ -41,7 +40,6 @@ export default function TransmissaoPage() {
   const { user } = useAuth();
   const [session, setSession] = useState<ActiveSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
 
   // Stream form
   const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -70,14 +68,6 @@ export default function TransmissaoPage() {
 
   useEffect(() => { fetchSession(); }, [fetchSession]);
 
-  // Link fixo da câmara: o telão mostra nome/brasão e entra sozinho em cada sessão aberta.
-  const telaoUrl = user?.chamberId ? `${FRONTEND_URL}/telao?camara=${user.chamberId}` : '';
-
-  function copyLink() {
-    navigator.clipboard.writeText(telaoUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
 
   // Thumbnail preview: local blob (antes do upload) > customThumb URL > auto-derived from YouTube
   const autoThumb = youtubeUrl ? youtubeThumbnail(youtubeUrl) : null;
@@ -162,6 +152,22 @@ export default function TransmissaoPage() {
       <div className="mb-8">
         <h2 className="font-tight font-semibold text-2xl" style={{ color: '#0B1220', letterSpacing: '-0.02em' }}>Transmissão</h2>
         <p className="text-sm mt-1" style={{ color: '#8A94A2' }}>Links e dados da transmissão para o telão do plenário</p>
+      </div>
+
+      {/* Telão: abre neste computador (logado) e é espelhado na TV */}
+      <div className="bg-white rounded-xl p-5 mb-4 flex items-center gap-4" style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
+        <span className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(20,71,230,0.08)' }}>
+          <Monitor size={18} style={{ color: '#1447E6' }} />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm" style={{ color: '#0B1220' }}>Telão do plenário</p>
+          <p className="text-xs mt-0.5" style={{ color: '#8A94A2' }}>Abre neste computador. Coloque em tela cheia e espelhe na TV. Só funciona com o painel logado.</p>
+        </div>
+        <a href="/telao" target="_blank" rel="noreferrer"
+           className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-semibold text-white flex-shrink-0"
+           style={{ background: '#1447E6' }}>
+          <ExternalLink size={14} /> Abrir telão
+        </a>
       </div>
 
       {!session ? (
@@ -350,35 +356,6 @@ export default function TransmissaoPage() {
             </div>
           </div>
 
-          {/* Telão link */}
-          <div className="bg-white rounded-xl p-5" style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Monitor size={16} style={{ color: '#1447E6' }} />
-              <p className="font-semibold text-sm" style={{ color: '#0B1220' }}>Link do Telão</p>
-            </div>
-            <div className="flex items-center gap-2 p-3 rounded-lg mb-3"
-                 style={{ background: '#F6F7F9', border: '1px solid rgba(15,23,42,0.08)' }}>
-              <code className="flex-1 font-mono-jet text-xs truncate" style={{ color: '#0B1220' }}>{telaoUrl}</code>
-              <button onClick={copyLink} className="flex-shrink-0 p-1.5 rounded transition-colors hover:bg-white"
-                      style={{ color: copied ? '#059669' : '#8A94A2' }}>
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <a href={telaoUrl} target="_blank" rel="noreferrer"
-                 className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-semibold text-white"
-                 style={{ background: '#1447E6' }}>
-                <ExternalLink size={14} /> Abrir Telão
-              </a>
-              <button onClick={copyLink}
-                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-semibold"
-                      style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? 'Copiado!' : 'Copiar Link'}
-              </button>
-            </div>
-          </div>
-
           {/* Instructions */}
           <div className="rounded-xl p-4" style={{ background: 'rgba(82,130,255,0.05)', border: '1px solid rgba(82,130,255,0.12)' }}>
             <p className="text-xs font-semibold mb-2" style={{ color: '#1447E6' }}>COMO USAR O TELÃO</p>
@@ -386,8 +363,8 @@ export default function TransmissaoPage() {
               {[
                 'Preencha o link da live do YouTube e clique em "Salvar no telão".',
                 'A thumbnail é gerada automaticamente ou você pode enviar uma imagem personalizada.',
-                'Copie o link do telão e abra em um navegador no computador do projetor.',
-                'Para tela cheia, pressione F11 no navegador do telão.',
+                'Clique em "Abrir telão" no computador ligado à TV (com o painel logado).',
+                'No telão, clique em "Tela cheia" e espelhe a tela na TV.',
               ].map((tip, i) => (
                 <li key={i} className="flex gap-2">
                   <span className="font-mono-jet font-bold flex-shrink-0"

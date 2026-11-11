@@ -46,8 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Ao abrir/recarregar: a sessão volta pelo cookie HttpOnly (nada fica salvo no navegador).
   useEffect(() => {
     clearLegacyStorage();
-    // Telão é público: não renova o login (evita disputar o cookie com o painel aberto ao lado)
-    if (window.location.pathname.startsWith('/telao')) { setLoading(false); return; }
     refreshSession()
       .then(session => { if (session) setUser(toAuthUser(session.user)); })
       .catch(() => { /* servidor fora do ar: tela de login mostra o erro ao tentar */ })
