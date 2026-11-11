@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import api from '@/lib/api';
+import api, { getAccessToken } from '@/lib/api';
 
 interface AgendaItem {
   id: string;
@@ -47,6 +47,9 @@ export interface LiveVoteEvent {
 }
 
 async function fetchVotesForItem(item: AgendaItem): Promise<LiveVoteEvent[]> {
+  // Lista de votos exige login. Telão sem login acompanha os votos pelo socket;
+  // chamar aqui daria 401 e o redirecionamento para /login tirava o telão da tela cheia.
+  if (!getAccessToken()) return [];
   try {
     const { data } = await api.get(`/voting/item/${item.id}/votes`);
     const counts = { sim: item.votesYes ?? 0, nao: item.votesNo ?? 0, abstencao: item.votesAbstain ?? 0 };

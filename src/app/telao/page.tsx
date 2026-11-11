@@ -50,12 +50,12 @@ function useNow(ms = 1000) {
   return now;
 }
 
-/** "45min", "2h 05min", "3d 04h" — sessões longas não viram "33203:14". */
-function fmtElapsed(sec: number) {
-  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
-  if (d > 0) return `${d}d ${String(h).padStart(2, '0')}h`;
-  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}min`;
-  return `${m}min`;
+/** Cronômetro crescente: "01:23:45"; passando de 24 h, "2d 01:23:45" (nunca "33203:14"). */
+function fmtElapsed(total: number) {
+  const sec = Math.floor(total);
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const hms = [h, m, s].map(n => String(n).padStart(2, '0')).join(':');
+  return d > 0 ? `${d}d ${hms}` : hms;
 }
 
 const mediaUrl = (p: string | null | undefined) => (p ? (p.startsWith('http') ? p : `${MEDIA}${p}`) : null);
@@ -383,7 +383,7 @@ function Header({ chamber, session, phaseLabel, now, presentCount, seats, quorum
       <div className="flex items-stretch flex-shrink-0" style={{ gap: u(34) }}>
         <HeaderStat label="Presentes" value={`${presentCount}/${seats || '–'}`} />
         <HeaderStat label="Quórum" value={quorum ? (ok ? 'Atingido' : `Faltam ${quorum - presentCount}`) : '–'} color={quorum ? (ok ? C.green : C.amber) : undefined} />
-        <HeaderStat label="Sessão" value={elapsed ? fmtElapsed(elapsed) : '–'} />
+        <HeaderStat label="Tempo de sessão" value={elapsed ? fmtElapsed(elapsed) : '–'} />
         <div className="flex flex-col items-end justify-center" style={{ paddingLeft: u(34), borderLeft: `1px solid ${C.border}` }}>
           <div className="font-bold" style={{ fontSize: u(54), lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
             {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

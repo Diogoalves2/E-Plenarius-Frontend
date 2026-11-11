@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Plus, Play, Square, X, Loader2, CalendarDays, Paperclip, Trash2, FileText, AudioLines } from 'lucide-react';
+import { Clock, Plus, Play, Square, X, Loader2, CalendarDays, FileText, AudioLines } from 'lucide-react';
 import api from '@/lib/api';
 import { fullSessionTitle, ChamberBienio } from '@/lib/sessionTitle';
-import { TIPOS_PROJETO, useChamberRules } from '@/lib/legislativo';
-import { canConductSession, MEMBER_ROLES } from '@/lib/auth';
+import { canConductSession } from '@/lib/auth';
 import { useDialog } from '@/components/ui/Dialog';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
@@ -181,40 +180,10 @@ export default function SessoesPage() {
   );
 }
 
-interface DraftItem {
-  _key: string;
-  type: string;
-  number: string;
-  title: string;
-  authorName: string;
-  votingType: 'aberta' | 'secreta';
-  quorumMinimum: string;
-  pdfUrl: string;
-  pdfUploading: boolean;
-}
-
-function emptyDraft(): DraftItem {
-  return { _key: Math.random().toString(36).slice(2), type: 'Projeto de Lei', number: '', title: '', authorName: '', votingType: 'aberta', quorumMinimum: '', pdfUrl: '', pdfUploading: false };
-}
-
-interface VereadorOption { id: string; name: string; party?: string | null; role: string; }
-
 function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId: string; chamber?: ChamberBienio | null; onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ number: '', type: 'ordinaria', scheduledAt: '' });
-  const { rules } = useChamberRules(chamberId);
-  const [items, setItems] = useState<DraftItem[]>([]);
-  const [draft, setDraft] = useState<DraftItem | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [vereadores, setVereadores] = useState<VereadorOption[]>([]);
-  const [authorOpen, setAuthorOpen] = useState(false);
-  const pdfRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    api.get(`/users/chamber/${chamberId}`).then(r => {
-      setVereadores(r.data.filter((u: VereadorOption) => MEMBER_ROLES.includes(u.role)));
-    }).catch(() => {});
-  }, [chamberId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -222,14 +191,7 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
     setLoading(true);
     try {
       const date = form.scheduledAt.substring(0, 10);
-      const payload: any = { chamberId, number: Number(form.number), type: form.type, date, scheduledAt: new Date(form.scheduledAt).toISOString() };
-      const { data: session } = await api.post('/sessions', payload);
-      for (let i = 0; i < items.length; i++) {
-        const it = items[i];
-        const itemPayload: any = { sessionId: session.id, chamberId, number: it.number, type: it.type, title: it.title, authorName: it.authorName, votingType: it.votingType, quorumMinimum: Number(it.quorumMinimum) || rules?.defaultQuorum || 1, orderIndex: i };
-        if (it.pdfUrl) itemPayload.pdfUrl = it.pdfUrl;
-        await api.post('/agenda', itemPayload);
-      }
+      await api.post('/sessions', { chamberId, number: Number(form.number), type: form.type, date, scheduledAt: new Date(form.scheduledAt).toISOString() });
       onCreated();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao criar sessão');
@@ -238,28 +200,8 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
     }
   }
 
-  async function handlePdfUpload(file: File) {
-    if (!draft) return;
-    setDraft(d => d ? { ...d, pdfUploading: true } : d);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const { data } = await api.post('/upload/pdf', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setDraft(d => d ? { ...d, pdfUrl: data.url, pdfUploading: false } : d);
-    } catch {
-      setDraft(d => d ? { ...d, pdfUploading: false } : d);
-    }
-  }
-
-  function saveDraft() {
-    if (!draft) return;
-    if (!draft.number || !draft.title || !draft.authorName) return;
-    setItems(prev => [...prev, draft]);
-    setDraft(null);
-  }
-
   return (
-    <Modal title="Nova Sessão" onClose={onClose} wide>
+    <Modal title="Nova Sessão" onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Preview do título completo */}
         {form.number && (
@@ -269,7 +211,6 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
           </div>
         )}
 
-        {/* Session fields */}
         <div className="grid grid-cols-2 gap-3">
           <Field label="NÚMERO" required>
             <Input type="number" min="1" value={form.number} onChange={e => setForm(f => ({ ...f, number: e.target.value }))} placeholder="47" required />
@@ -288,138 +229,12 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
           <Input type="datetime-local" value={form.scheduledAt} onChange={e => setForm(f => ({ ...f, scheduledAt: e.target.value }))} required />
         </Field>
 
-        {/* Agenda items */}
-        <div className="flex flex-col gap-2 pt-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold font-mono-jet" style={{ color: '#8A94A2', letterSpacing: '0.06em' }}>ORDEM DO DIA</span>
-            {!draft && (
-              <button type="button" onClick={() => setDraft(emptyDraft())}
-                      className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg"
-                      style={{ background: 'rgba(82,130,255,0.08)', color: '#1447E6' }}>
-                <Plus size={12} /> Adicionar Projeto
-              </button>
-            )}
-          </div>
-
-          {/* Added items list */}
-          {items.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              {items.map((it, i) => (
-                <div key={it._key} className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(15,23,42,0.03)', border: '1px solid rgba(15,23,42,0.08)' }}>
-                  <span className="text-xs font-semibold font-mono-jet w-5 text-center" style={{ color: '#8A94A2' }}>{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate" style={{ color: '#0B1220' }}>{it.number} · {it.title}</p>
-                    <p className="text-xs truncate" style={{ color: '#8A94A2' }}>{it.type} · {it.authorName}</p>
-                  </div>
-                  {it.pdfUrl && <Paperclip size={12} style={{ color: '#8A94A2', flexShrink: 0 }} />}
-                  <button type="button" onClick={() => setItems(prev => prev.filter((_, j) => j !== i))}
-                          className="p-1 rounded hover:bg-red-50 transition-colors" style={{ flexShrink: 0 }}>
-                    <Trash2 size={12} style={{ color: '#dc2626' }} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Draft form */}
-          {draft && (
-            <div className="flex flex-col gap-3 p-3 rounded-xl" style={{ background: 'rgba(82,130,255,0.04)', border: '1px solid rgba(82,130,255,0.15)' }}>
-              <Field label="TIPO DE PROJETO" required>
-                <select value={draft.type} onChange={e => setDraft(d => d ? { ...d, type: e.target.value } : d)}
-                        className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
-                  {TIPOS_PROJETO.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="NÚMERO" required>
-                  <Input value={draft.number} onChange={e => setDraft(d => d ? { ...d, number: e.target.value } : d)} placeholder="PL 023/2026" />
-                </Field>
-                <Field label="TIPO DE VOTAÇÃO" required>
-                  <select value={draft.votingType} onChange={e => setDraft(d => d ? { ...d, votingType: e.target.value as 'aberta' | 'secreta' } : d)}
-                          className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
-                    <option value="aberta">Aberta</option>
-                    <option value="secreta">Secreta</option>
-                  </select>
-                </Field>
-              </div>
-              <Field label="TÍTULO" required>
-                <Input value={draft.title} onChange={e => setDraft(d => d ? { ...d, title: e.target.value } : d)} placeholder="Institui o Programa..." />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="AUTOR" required>
-                  <div className="relative">
-                    <Input
-                      value={draft.authorName}
-                      onChange={e => { setDraft(d => d ? { ...d, authorName: e.target.value } : d); setAuthorOpen(true); }}
-                      onFocus={() => setAuthorOpen(true)}
-                      onBlur={() => setTimeout(() => setAuthorOpen(false), 150)}
-                      placeholder="Nome do autor ou Executivo Municipal"
-                    />
-                    {authorOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg overflow-hidden shadow-lg"
-                           style={{ background: 'white', border: '1px solid rgba(15,23,42,0.12)', maxHeight: 200, overflowY: 'auto' }}>
-                        {/* Sugestões fixas */}
-                        {['Executivo Municipal', 'Mesa Diretora', 'Comissão Permanente'].filter(s =>
-                          !draft.authorName || s.toLowerCase().includes(draft.authorName.toLowerCase())
-                        ).map(s => (
-                          <button key={s} type="button" onMouseDown={() => { setDraft(d => d ? { ...d, authorName: s } : d); setAuthorOpen(false); }}
-                                  className="w-full text-left px-3.5 py-2 text-sm hover:bg-gray-50 border-b"
-                                  style={{ borderColor: 'rgba(15,23,42,0.06)', color: '#4B5563' }}>
-                            <span className="text-xs font-mono-jet font-semibold mr-2" style={{ color: '#8A94A2' }}>INSTITUIÇÃO</span>
-                            {s}
-                          </button>
-                        ))}
-                        {/* Vereadores da câmara */}
-                        {vereadores.filter(v =>
-                          !draft.authorName || v.name.toLowerCase().includes(draft.authorName.toLowerCase())
-                        ).map(v => (
-                          <button key={v.id} type="button" onMouseDown={() => { setDraft(d => d ? { ...d, authorName: v.name } : d); setAuthorOpen(false); }}
-                                  className="w-full text-left px-3.5 py-2 text-sm hover:bg-gray-50"
-                                  style={{ color: '#0B1220' }}>
-                            <span className="font-semibold">{v.name}</span>
-                            {v.party && <span className="ml-2 text-xs font-mono-jet" style={{ color: '#8A94A2' }}>{v.party}</span>}
-                          </button>
-                        ))}
-                        {!draft.authorName && vereadores.length === 0 && (
-                          <p className="px-3.5 py-2 text-xs" style={{ color: '#8A94A2' }}>Nenhum vereador cadastrado</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Field>
-                <Field label="QUÓRUM MÍNIMO" required>
-                  <Input type="number" min="1" value={draft.quorumMinimum} onChange={e => setDraft(d => d ? { ...d, quorumMinimum: e.target.value } : d)} placeholder={rules ? String(rules.defaultQuorum) : ''} />
-                </Field>
-              </div>
-              <Field label="PDF DO PROJETO">
-                <input ref={pdfRef} type="file" accept="application/pdf" className="hidden" onChange={e => e.target.files?.[0] && handlePdfUpload(e.target.files[0])} />
-                {draft.pdfUrl ? (
-                  <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm" style={iStyle}>
-                    <Paperclip size={14} style={{ color: '#059669' }} />
-                    <span className="flex-1 text-xs truncate" style={{ color: '#059669' }}>PDF anexado</span>
-                    <button type="button" onClick={() => setDraft(d => d ? { ...d, pdfUrl: '' } : d)} className="p-0.5 rounded hover:bg-red-50"><X size={12} style={{ color: '#dc2626' }} /></button>
-                  </div>
-                ) : (
-                  <button type="button" onClick={() => pdfRef.current?.click()} disabled={draft.pdfUploading}
-                          className="flex items-center gap-2 w-full px-3.5 py-2.5 rounded-lg text-sm" style={{ ...iStyle, color: '#8A94A2' }}>
-                    {draft.pdfUploading ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
-                    {draft.pdfUploading ? 'Enviando…' : 'Anexar PDF'}
-                  </button>
-                )}
-              </Field>
-              <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setDraft(null)} className="flex-1 py-2 rounded-lg text-xs font-semibold" style={{ border: '1px solid rgba(15,23,42,0.12)', color: '#4B5563' }}>Cancelar</button>
-                <button type="button" onClick={saveDraft} disabled={!draft.number || !draft.title || !draft.authorName}
-                        className="flex-1 py-2 rounded-lg text-xs font-semibold text-white" style={{ background: '#1447E6', opacity: (!draft.number || !draft.title || !draft.authorName) ? 0.5 : 1 }}>
-                  Adicionar
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <p className="text-xs leading-relaxed" style={{ color: '#8A94A2' }}>
+          Projetos e requerimentos da pauta são cadastrados em <b style={{ color: '#4B5563' }}>Ordem do dia</b>, depois de criar a sessão.
+        </p>
 
         {error && <ErrorBox msg={error} />}
-        <ModalActions onClose={onClose} loading={loading} label={`Criar Sessão${items.length > 0 ? ` + ${items.length} projeto(s)` : ''}`} />
+        <ModalActions onClose={onClose} loading={loading} label="Criar Sessão" />
       </form>
     </Modal>
   );

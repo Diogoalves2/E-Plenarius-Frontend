@@ -85,7 +85,9 @@ api.interceptors.response.use(
       try {
         const session = await refreshSession();
         if (!session) {
-          window.location.href = '/login';
+          // Telão e portal público não têm login: nunca navegar (sairia da tela cheia).
+          const p = window.location.pathname;
+          if (!p.startsWith('/telao') && !p.startsWith('/publico') && !p.startsWith('/ata')) window.location.href = '/login';
           return Promise.reject(error);
         }
         original.headers.Authorization = `Bearer ${session.accessToken}`;
