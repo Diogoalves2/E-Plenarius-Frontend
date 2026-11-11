@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Topbar } from '@/components/layout/Topbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ChamberProvider } from '@/contexts/ChamberContext';
+import { StaleSessionBanner } from '@/components/layout/StaleSessionBanner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -41,6 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Topbar onMenuToggle={() => setSidebarOpen(s => !s)} />
+        <StaleSessionBanner />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>

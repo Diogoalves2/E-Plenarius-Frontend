@@ -16,6 +16,8 @@ export interface ChamberInfo {
   logo: string | null;
   /** Há sessão em andamento agora (atualizado a cada 30 s). */
   live: boolean;
+  /** Início da sessão em andamento (ISO) — para avisar sessão esquecida aberta. */
+  liveSince: string | null;
 }
 
 const ChamberContext = createContext<ChamberInfo | null>(null);
@@ -23,8 +25,9 @@ const ChamberContext = createContext<ChamberInfo | null>(null);
 /** Câmara do usuário logado: buscada uma vez e compartilhada por todo o painel. */
 export function ChamberProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [chamber, setChamber] = useState<Omit<ChamberInfo, 'live'> | null>(null);
+  const [chamber, setChamber] = useState<Omit<ChamberInfo, 'live' | 'liveSince'> | null>(null);
   const [live, setLive] = useState(false);
+  const [liveSince, setLiveSince] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.chamberId) { setChamber(null); return; }
@@ -39,7 +42,8 @@ export function ChamberProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user?.chamberId) return;
     const check = () => api.get(`/sessions/active/${user.chamberId}`)
-      .then(({ data }) => setLive(!!data?.id)).catch(() => {});
+      .then(({ data }) => { setLive(!!data?.id); setLiveSince(data?.id ? data.startedAt ?? data.createdAt ?? null : null); })
+      .catch(() => {});
     check();
     const id = setInterval(check, 30_000);
     return () => clearInterval(id);
@@ -49,7 +53,7 @@ export function ChamberProvider({ children }: { children: ReactNode }) {
     if (chamber) document.title = `${chamber.name} · Painel E-Plenarius`;
   }, [chamber]);
 
-  return <ChamberContext.Provider value={chamber ? { ...chamber, live } : null}>{children}</ChamberContext.Provider>;
+  return <ChamberContext.Provider value={chamber ? { ...chamber, live, liveSince } : null}>{children}</ChamberContext.Provider>;
 }
 
 export function useChamber() {

@@ -6,35 +6,77 @@ import { useVoting } from '@/hooks/useVoting';
 import { useVotingSounds } from '@/hooks/useVotingSounds';
 import { useExpedienteSounds } from '@/hooks/useExpedienteSounds';
 import { useExpediente, ExpedienteAtivo, AparteAtivo } from '@/hooks/useExpediente';
-import { Video, Volume2 } from 'lucide-react';
+import { Volume2, Maximize2, Minimize2, WifiOff, CheckCircle2, XCircle } from 'lucide-react';
 import { fullSessionTitle } from '@/lib/sessionTitle';
 import { SecretTally } from '@/components/voting/SecretTally';
-import { DEFAULT_PHASES, type SessionPhase } from '@/lib/legislativo';
+import { DEFAULT_PHASES, MAJORITY_LABEL, type SessionPhase } from '@/lib/legislativo';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const MEDIA = API.replace(/\/api\/?$/, '');
 
+/** Quanto tempo o resultado fica na tela depois de encerrada a votação. */
+const RESULT_MS = 20_000;
+
+/**
+ * Tudo no telão é medido em "u": 1/1920 da largura (limitado pela altura de 1080).
+ * Assim a mesma tela fica proporcional em TV Full HD, 4K ou projetor.
+ */
+const u = (n: number) => `calc(${n} * var(--u))`;
+
+const C = {
+  bg: '#07090D', surface: '#10141B', surface2: '#151A23', border: 'rgba(255,255,255,0.07)',
+  text: '#F1F5F9', muted: '#8B95A5', dim: '#5B6472', accent: '#4F7BFF',
+  green: '#22C55E', red: '#EF4444', amber: '#F59E0B', gray: '#94A3B8',
+};
+
 interface VereadorPresente {
-  id: string; name: string; initials: string; avatarUrl: string | null; party: string | null; role: string;
+  id: string; name: string; initials: string; avatarUrl: string | null; party: string | null; role: string; title?: string | null;
 }
-interface SessionInfo { id: string; number: number; type: string; date: string; chamberId: string; phase?: string | null; startedAt?: string | null; youtubeUrl?: string | null; youtubeThumbnailUrl?: string | null; }
-interface ChamberInfo { id: string; name: string; city: string; state: string; logoUrl?: string | null; bienioInicio?: number | null; bienioFim?: number | null; anoBienio?: number | null; sessionPhases?: SessionPhase[] | null; }
+interface SessionInfo {
+  id: string; number: number; type: string; date: string; chamberId: string; status?: string;
+  phase?: string | null; startedAt?: string | null;
+}
+interface ChamberInfo {
+  id: string; name: string; city: string; state: string; logoUrl?: string | null;
+  bienioInicio?: number | null; bienioFim?: number | null; anoBienio?: number | null;
+  sessionPhases?: SessionPhase[] | null; totalSeats?: number | null; defaultQuorum?: number | null;
+}
+
+const TYPE_LABEL: Record<string, string> = { ordinaria: 'Ordinária', extraordinaria: 'Extraordinária', solene: 'Solene', especial: 'Especial' };
+
+function useNow(ms = 1000) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const id = setInterval(() => setNow(new Date()), ms); return () => clearInterval(id); }, [ms]);
+  return now;
+}
+
+/** "45min", "2h 05min", "3d 04h" — sessões longas não viram "33203:14". */
+function fmtElapsed(sec: number) {
+  const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}d ${String(h).padStart(2, '0')}h`;
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}min`;
+  return `${m}min`;
+}
+
+const mediaUrl = (p: string | null | undefined) => (p ? (p.startsWith('http') ? p : `${MEDIA}${p}`) : null);
+const shortName = (n: string) => n.split(' ').slice(0, 2).join(' ');
 
 export default function TelaoPage() {
   const [mounted, setMounted] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [chamberInfo, setChamberInfo] = useState<ChamberInfo | null>(null);
-  const [timer, setTimer] = useState(0);
-  const [sessionTimer, setSessionTimer] = useState(0);
-
-  useEffect(() => { setMounted(true); }, []);
+  const [nextSession, setNextSession] = useState<SessionInfo | null>(null);
   const [vereadores, setVereadores] = useState<VereadorPresente[]>([]);
   const [presentes, setPresentes] = useState<Set<string>>(new Set());
+  const now = useNow();
+
+  useEffect(() => { setMounted(true); }, []);
 
   // ?camara=<id>: telão fixo da câmara — mostra nome/brasão mesmo sem sessão e entra
   // sozinho na sessão em andamento. ?sessionId=<id> continua abrindo uma sessão específica.
   const [camaraId, setCamaraId] = useState<string | null>(null);
+  const [fixedSession, setFixedSession] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const camara = params.get('camara');
@@ -43,23 +85,47 @@ export default function TelaoPage() {
       setCamaraId(camara);
       fetch(`${API}/chambers/${camara}`).then(r => r.ok ? r.json() : null).then(c => c && setChamberInfo(c)).catch(() => {});
     }
-    if (sid) setSessionId(sid);
+    if (sid) { setSessionId(sid); setFixedSession(true); }
     else if (!camara) {
       const saved = localStorage.getItem('telao_session');
       if (saved) setSessionId(saved);
     }
   }, []);
 
+  // Modo câmara: segue a sessão em andamento (e volta à tela de espera quando ela termina)
   useEffect(() => {
-    if (!camaraId || new URLSearchParams(window.location.search).get('sessionId')) return;
+    if (!camaraId || fixedSession) return;
     const check = () => fetch(`${API}/sessions/active/${camaraId}`)
       .then(r => r.ok ? r.text() : '')
-      .then(t => { const s = t ? JSON.parse(t) : null; if (s?.id) setSessionId(prev => prev === s.id ? prev : s.id); })
+      .then(t => {
+        const s = t ? JSON.parse(t) : null;
+        setSessionId(prev => (s?.id ?? null) === prev ? prev : (s?.id ?? null));
+        if (!s) setSessionInfo(null);
+      })
       .catch(() => {});
     check();
     const id = setInterval(check, 15_000);
     return () => clearInterval(id);
-  }, [camaraId]);
+  }, [camaraId, fixedSession]);
+
+  // Tela de espera: próxima sessão agendada
+  useEffect(() => {
+    if (!camaraId || sessionId) return;
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    fetch(`${API}/sessions/chamber/${camaraId}`).then(r => r.ok ? r.json() : [])
+      .then((list: SessionInfo[]) => setNextSession(
+        list.filter(s => s.status === 'agendada' && s.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0] ?? null,
+      )).catch(() => {});
+  }, [camaraId, sessionId]);
+
+  const fetchSessionInfo = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const r = await fetch(`${API}/sessions/${sessionId}`);
+      if (r.ok) setSessionInfo(await r.json());
+    } catch { /* tenta de novo no próximo ciclo */ }
+  }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -83,39 +149,42 @@ export default function TelaoPage() {
   useEffect(() => { setPhase(sessionInfo?.phase ?? null); }, [sessionInfo?.phase]);
   useEffect(() => {
     if (!socket) return;
-    const onPhase = (d: { phase: string | null }) => setPhase(d.phase);
+    const onPhase = (d: { phase: string | null; ended?: boolean }) => {
+      setPhase(d.phase);
+      if (d.ended) fetchSessionInfo();
+    };
     socket.on('session:phase', onPhase);
     return () => { socket.off('session:phase', onPhase); };
-  }, [socket]);
+  }, [socket, fetchSessionInfo]);
   const phaseLabel = phase
     ? ((chamberInfo?.sessionPhases?.length ? chamberInfo.sessionPhases : DEFAULT_PHASES).find(p => p.key === phase)?.label ?? null)
     : null;
+
   const { activeItem, counts, countsHidden, totalVotes, voteLog } = useVoting(sessionId, socket);
   const { expedienteAtivo, aparteAtivo } = useExpediente(sessionId);
   const { needsActivation: soundNeedsActivation, activate: activateSound } = useVotingSounds(socket);
   const { needsActivation: expedienteSoundNeedsActivation } = useExpedienteSounds(socket);
-  const anySoundNeedsActivation = soundNeedsActivation || expedienteSoundNeedsActivation;
+  const soundNeeded = soundNeedsActivation || expedienteSoundNeedsActivation;
 
-  // Controla exibição do resultado: true por 8s após voting:closed, depois volta ao quórum
+  // Resultado fica na tela por RESULT_MS depois de encerrada a votação
   const [resultVisible, setResultVisible] = useState(false);
   useEffect(() => {
     if (!socket) return;
-    const onClosed = () => {
-      setResultVisible(true);
-      setTimeout(() => setResultVisible(false), 8000);
-    };
+    let t: ReturnType<typeof setTimeout>;
+    const onClosed = () => { setResultVisible(true); clearTimeout(t); t = setTimeout(() => setResultVisible(false), RESULT_MS); };
+    const onOpened = () => { clearTimeout(t); setResultVisible(false); };
     socket.on('voting:closed', onClosed);
-    return () => { socket.off('voting:closed', onClosed); };
+    socket.on('voting:opened', onOpened);
+    return () => { clearTimeout(t); socket.off('voting:closed', onClosed); socket.off('voting:opened', onOpened); };
   }, [socket]);
 
-  // Mapa userId → choice, derivado do voteLog
   const votesMap = useMemo(() => {
     const m: Record<string, string> = {};
     voteLog.forEach(v => { m[v.userId] = v.choice; });
     return m;
   }, [voteLog]);
 
-  // Fetch quorum data — all chamber members + who confirmed presence
+  // Membros da Casa + quem confirmou presença
   const fetchQuorum = useCallback(async () => {
     if (!sessionId || !sessionInfo?.chamberId) return;
     try {
@@ -127,67 +196,44 @@ export default function TelaoPage() {
         const members: VereadorPresente[] = await membersRes.json();
         setVereadores(
           members
-            .filter(u => (u.role === 'vereador' || u.role === 'presidente' || u.role === 'vice_presidente') && (u as any).isActive !== false)
+            .filter(m => ['vereador', 'presidente', 'vice_presidente'].includes(m.role) && (m as any).isActive !== false)
             .sort((a, b) => {
               // Mesa Diretora primeiro: presidente, vice, 1º e 2º secretários; depois os demais
-              const rank = (u: any) => u.role === 'presidente' ? 0 : u.role === 'vice_presidente' ? 1
-                : /^1º Secret/i.test(u.title ?? '') ? 2 : /^2º Secret/i.test(u.title ?? '') ? 3 : 4;
-              if (rank(a) !== rank(b)) return rank(a) - rank(b);
-              return a.name.localeCompare(b.name, 'pt-BR');
-            })
+              const rank = (m: VereadorPresente) => m.role === 'presidente' ? 0 : m.role === 'vice_presidente' ? 1
+                : /^1º Secret/i.test(m.title ?? '') ? 2 : /^2º Secret/i.test(m.title ?? '') ? 3 : 4;
+              return rank(a) - rank(b) || a.name.localeCompare(b.name, 'pt-BR');
+            }),
         );
       }
       if (presRes.ok) {
         const presencas: { userId: string }[] = await presRes.json();
         setPresentes(new Set(presencas.map(p => p.userId)));
       }
-    } catch { /* silently ignore */ }
+    } catch { /* tenta de novo no próximo ciclo */ }
   }, [sessionId, sessionInfo?.chamberId]);
-
-  const fetchSessionInfo = useCallback(async () => {
-    if (!sessionId) return;
-    try {
-      const r = await fetch(`${API}/sessions/${sessionId}`);
-      if (r.ok) setSessionInfo(await r.json());
-    } catch { /* silently ignore */ }
-  }, [sessionId]);
 
   useEffect(() => { fetchQuorum(); }, [fetchQuorum]);
 
-  // Resync all data on every socket (re)connection
   useEffect(() => {
     if (!socket) return;
-    const onConnect = () => {
-      fetchQuorum();
-      fetchSessionInfo();
-    };
+    const onConnect = () => { fetchQuorum(); fetchSessionInfo(); };
     socket.on('connect', onConnect);
     return () => { socket.off('connect', onConnect); };
   }, [socket, fetchQuorum, fetchSessionInfo]);
 
-  // Refresh sessionInfo every 30s (YouTube URL/thumbnail changes)
   useEffect(() => {
     if (!sessionId) return;
-    const id = setInterval(fetchSessionInfo, 30_000);
+    const id = setInterval(() => { fetchSessionInfo(); fetchQuorum(); }, 30_000);
     return () => clearInterval(id);
-  }, [sessionId, fetchSessionInfo]);
+  }, [sessionId, fetchSessionInfo, fetchQuorum]);
 
-  // Refresh quorum every 30s as safety net
-  useEffect(() => {
-    if (!sessionId) return;
-    const id = setInterval(fetchQuorum, 30_000);
-    return () => clearInterval(id);
-  }, [sessionId, fetchQuorum]);
-
-  // Atualiza quórum em tempo real — atualização instantânea via userId + fetch de segurança
   useEffect(() => {
     if (!socket) return;
     const onQuorumUpdated = (data: { userId?: string; action?: 'added' | 'removed' }) => {
       if (data.userId && data.action) {
         setPresentes(prev => {
           const next = new Set(prev);
-          if (data.action === 'added') next.add(data.userId!);
-          else next.delete(data.userId!);
+          if (data.action === 'added') next.add(data.userId!); else next.delete(data.userId!);
           return next;
         });
       }
@@ -197,686 +243,384 @@ export default function TelaoPage() {
     return () => { socket.off('quorum:updated', onQuorumUpdated); };
   }, [socket, fetchQuorum]);
 
+  // Conexão perdida por mais de 8 s: aviso grande (os dados podem estar desatualizados)
+  const [offline, setOffline] = useState(false);
   useEffect(() => {
-    if (!activeItem) { setTimer(0); return; }
-    // Votação encerrada — mostra duração total fixa
-    if (activeItem.status !== 'em_votacao' && activeItem.votingOpenedAt && activeItem.votingClosedAt) {
-      setTimer(Math.floor(
-        (new Date(activeItem.votingClosedAt).getTime() - new Date(activeItem.votingOpenedAt).getTime()) / 1000
-      ));
-      return;
-    }
-    const startMs = activeItem.votingOpenedAt
-      ? new Date(activeItem.votingOpenedAt).getTime()
-      : Date.now();
-    const tick = () => setTimer(Math.floor((Date.now() - startMs) / 1000));
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [activeItem?.id, activeItem?.status]);
-
-  // Session elapsed timer — counts up from startedAt
-  useEffect(() => {
-    if (!sessionInfo?.startedAt) { setSessionTimer(0); return; }
-    const startMs = new Date(sessionInfo.startedAt).getTime();
-    const tick = () => setSessionTimer(Math.floor((Date.now() - startMs) / 1000));
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [sessionInfo?.startedAt]);
-
-  const mm = String(Math.floor(timer / 60)).padStart(2, '0');
-  const ss = String(timer % 60).padStart(2, '0');
-  const smm = String(Math.floor(sessionTimer / 60)).padStart(2, '0');
-  const sss = String(sessionTimer % 60).padStart(2, '0');
-  const total = totalVotes;
-  const isApproved = activeItem?.status === 'aprovado';
-  const isRejected = activeItem?.status === 'rejeitado';
+    if (!sessionId || connected) { setOffline(false); return; }
+    const t = setTimeout(() => setOffline(true), 8000);
+    return () => clearTimeout(t);
+  }, [connected, sessionId]);
 
   if (!mounted) return null;
 
-  // Priority: expediente > voting > quorum
-  if (expedienteAtivo) {
-    return (
-      <TelaoExpediente
-        expediente={expedienteAtivo}
-        aparte={aparteAtivo}
-        connected={connected}
-        chamberInfo={chamberInfo}
-      />
-    );
-  }
+  const live = !!sessionId && (!sessionInfo || sessionInfo.status === undefined || sessionInfo.status === 'em_andamento');
+  const presentCount = vereadores.filter(v => presentes.has(v.id)).length;
+  const seats = chamberInfo?.totalSeats ?? (vereadores.length || 0);
+  const quorum = chamberInfo?.defaultQuorum ?? (seats ? Math.floor(seats / 2) + 1 : 0);
+  const elapsed = sessionInfo?.startedAt ? Math.max(0, (now.getTime() - new Date(sessionInfo.startedAt).getTime()) / 1000) : 0;
 
-  // Quorum screen: sem votação ativa E sem resultado sendo exibido
-  const showVoting = activeItem && (activeItem.status === 'em_votacao' || resultVisible);
-  if (!showVoting) {
-    return (
-      <TelaoQuorum
-        vereadores={vereadores}
-        presentes={presentes}
-        connected={connected}
-        mm={smm}
-        ss={sss}
-        sessionInfo={sessionInfo}
-        chamberInfo={chamberInfo}
-      />
+  const header = (
+    <Header chamber={chamberInfo} session={sessionInfo} phaseLabel={phaseLabel} now={now}
+            presentCount={presentCount} seats={seats} quorum={quorum} elapsed={elapsed} connected={connected} />
+  );
+
+  let screen: React.ReactNode;
+  if (!live) {
+    screen = <Standby chamber={chamberInfo} now={now} next={nextSession} ended={!!sessionId && sessionInfo?.status === 'encerrada'} />;
+  } else if (expedienteAtivo) {
+    screen = <ExpedienteScreen header={header} expediente={expedienteAtivo} aparte={aparteAtivo} />;
+  } else if (activeItem && (activeItem.status === 'em_votacao' || resultVisible)) {
+    screen = (
+      <VotingScreen header={header} item={activeItem} counts={counts} countsHidden={!!countsHidden} total={totalVotes}
+                    now={now} vereadores={vereadores} presentes={presentes} votesMap={votesMap} presentCount={presentCount} />
     );
+  } else {
+    screen = <QuorumScreen header={header} vereadores={vereadores} presentes={presentes} quorum={quorum} seats={seats} />;
   }
 
   return (
-    <div className="w-screen h-screen flex flex-col overflow-hidden"
-         style={{ background: '#0B0D10', color: '#E9EDF2', fontFamily: 'Inter, system-ui, sans-serif' }}>
-
-      {/* Banner pra ativar som (autoplay bloqueado pelo browser) */}
-      {anySoundNeedsActivation && (
-        <button
-          onClick={activateSound}
-          className="flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm"
-          style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 50,
-            background: '#F59E0B', color: '#0B0D10', border: 'none',
-            cursor: 'pointer', animation: 'pulse-dot 2s ease-in-out infinite',
-          }}
-        >
-          <Volume2 size={16} />
-          Clique para ativar o som
-        </button>
-      )}
-
-      {/* Topbar */}
-      <div className="flex items-center gap-5 px-10 flex-shrink-0"
-           style={{ minHeight: 80, borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#111418' }}>
-        <Brasao size={44} color="#1447E6" chamberInfo={chamberInfo} />
-        <div>
-          <div className="text-[11px] font-mono-jet tracking-widest" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>
-            {chamberInfo ? `${chamberInfo.name.toUpperCase()} · ${chamberInfo.state.toUpperCase()}` : 'CÂMARA MUNICIPAL'}
-          </div>
-          <div className="font-tight font-semibold text-[15px] mt-0.5" style={{ letterSpacing: '-0.02em' }}>
-            {sessionInfo ? fullSessionTitle(sessionInfo.number, sessionInfo.type, chamberInfo) : 'Sessão em andamento'}
-          </div>
-          {sessionInfo && (
-            <div className="text-[11px] font-mono-jet mt-0.5 flex items-center gap-2" style={{ color: '#5B636D' }}>
-              <span>
-                {new Date(sessionInfo.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-              </span>
-              {sessionInfo.startedAt && (
-                <>
-                  <span style={{ color: '#3B4451' }}>·</span>
-                  <span>Iniciada às {new Date(sessionInfo.startedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                  {phaseLabel && (
-                    <span className="px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(20,71,230,0.18)', color: '#9DB7FF' }}>{phaseLabel}</span>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="ml-auto flex items-center gap-6">
-          <StatTop label="QUÓRUM" value={`${presentes.size}/${vereadores.length || '?'}`} />
-          <div className="w-px h-9" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          <StatTop label="VOTARAM" value={`${total}`} />
-          <div className="w-px h-9" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          <div>
-            <div className="text-[10px] font-mono-jet tracking-widest" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>TEMPO</div>
-            <div className="font-mono-jet font-medium text-2xl mt-0.5" style={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-              {mm}:{ss}
-            </div>
-          </div>
-          <ConnectionBadge connected={connected} />
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden" style={{ gap: 1, background: 'rgba(255,255,255,0.04)' }}>
-        <div className="flex flex-col gap-8 p-12 relative overflow-hidden" style={{ flex: '1.15', background: '#0B0D10' }}>
-          <div className="absolute inset-0 pointer-events-none"
-               style={{ background: 'radial-gradient(700px 400px at 20% 80%, rgba(82,130,255,0.08), transparent 60%)' }} />
-          <div className="relative">
-            <div className="flex items-center gap-2 mb-4">
-              {activeItem ? (
-                <>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-mono-jet font-semibold px-3 py-1.5 rounded-full"
-                        style={{ background: 'rgba(82,130,255,0.15)', color: '#1447E6' }}>
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot inline-block" style={{ background: '#1447E6' }} />
-                    EM VOTAÇÃO
-                  </span>
-                  <span className="text-sm font-mono-jet" style={{ color: '#5B636D' }}>
-                    {activeItem.number} · {activeItem.type.toUpperCase()}
-                  </span>
-                </>
-              ) : (
-                <span className="text-[11px] font-mono-jet font-semibold px-3 py-1.5 rounded-full"
-                      style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>
-                  AGUARDANDO ABERTURA
-                </span>
-              )}
-            </div>
-            <div className="text-[13px] font-mono-jet mb-2" style={{ color: '#5B636D', letterSpacing: '0.08em' }}>EM VOTAÇÃO</div>
-            <h1 className="font-tight font-semibold leading-tight mb-4"
-                style={{ fontSize: 44, letterSpacing: '-0.03em', lineHeight: 1.1, maxWidth: 760 }}>
-              {activeItem?.title}
-            </h1>
-            {activeItem?.description && (
-              <p style={{ fontSize: 16, color: '#9AA3AE', lineHeight: 1.5, maxWidth: 640 }}>{activeItem.description}</p>
-            )}
-            {activeItem && (
-              <div className="flex items-center gap-2 mt-4 text-sm" style={{ color: '#9AA3AE' }}>
-                <span className="font-mono-jet text-xs tracking-wider" style={{ color: '#5B636D', letterSpacing: '0.08em' }}>AUTORIA</span>
-                <span className="font-medium" style={{ color: '#E9EDF2' }}>{activeItem.authorName}</span>
-              </div>
-            )}
-          </div>
-          <StreamCard sessionInfo={sessionInfo} />
-        </div>
-        <div className="flex flex-col gap-5 p-12" style={{ flex: 1, background: '#07090B' }}>
-          <div className="text-[12px] font-mono-jet tracking-widest" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>
-            RESULTADO {isApproved || isRejected ? 'FINAL' : 'PARCIAL'}
-          </div>
-          {countsHidden ? <SecretTally total={total} dark large /> : (<>
-          <BigCount label="SIM" count={counts.sim} color="oklch(0.70 0.16 150)" />
-          <BigCount label="NÃO" count={counts.nao} color="oklch(0.68 0.20 25)" />
-          <BigCount label="ABSTENÇÃO" count={counts.abstencao} color="oklch(0.70 0.02 250)" />
-          </>)}
-          {(isApproved || isRejected) && (
-            <div className="p-5 rounded-2xl"
-                 style={{ background: isApproved ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                           border: `2px solid ${isApproved ? 'oklch(0.70 0.16 150)' : 'oklch(0.68 0.20 25)'}` }}>
-              <div className="text-[12px] font-mono-jet tracking-wider mb-1" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>RESULTADO</div>
-              <div className="font-tight font-bold"
-                   style={{ fontSize: 40, letterSpacing: '-0.03em', lineHeight: 1.05,
-                            color: isApproved ? 'oklch(0.70 0.16 150)' : 'oklch(0.68 0.20 25)' }}>
-                {isApproved ? 'APROVADO' : 'REPROVADO'}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom ticker — todos os vereadores presentes */}
-      <VotoTicker vereadores={vereadores} presentes={presentes} votesMap={votesMap} />
-    </div>
+    <Kiosk soundNeeded={soundNeeded} onActivateSound={activateSound} offline={offline}>
+      {screen}
+    </Kiosk>
   );
 }
 
-/* ── Tela Expediente ─────────────────────────────────────── */
-function TelaoExpediente({ expediente, aparte, connected, chamberInfo }: {
-  expediente: ExpedienteAtivo; aparte: AparteAtivo | null; connected: boolean;
-  chamberInfo?: ChamberInfo | null;
+/* ── Quiosque: tela cheia, cursor some, tela não apaga, aviso de conexão ───── */
+function Kiosk({ children, soundNeeded, onActivateSound, offline }: {
+  children: React.ReactNode; soundNeeded: boolean; onActivateSound: () => void; offline: boolean;
 }) {
-  const { vereador, tipo, tempoRestante, duracao, paused } = expediente;
-  const m = Math.floor(tempoRestante / 60);
-  const s = tempoRestante % 60;
-  const pct = Math.max(0, tempoRestante / duracao);
-  const urgente = pct <= 0.2 && !paused;
-  const timerColor = paused ? '#f59e0b' : urgente ? '#ef4444' : pct <= 0.5 ? '#f59e0b' : '#22c55e';
-  const timerGlow = paused ? '#f59e0b80' : urgente ? '#ef444460' : pct <= 0.5 ? '#f59e0b50' : '#22c55e40';
+  const [idle, setIdle] = useState(false);
+  const [fs, setFs] = useState(false);
 
-  const arcW = 440;
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const wake = () => { setIdle(false); clearTimeout(t); t = setTimeout(() => setIdle(true), 3000); };
+    wake();
+    window.addEventListener('mousemove', wake);
+    window.addEventListener('pointerdown', wake);
+    return () => { clearTimeout(t); window.removeEventListener('mousemove', wake); window.removeEventListener('pointerdown', wake); };
+  }, []);
+
+  // A TV/computador não entra em descanso enquanto o telão estiver aberto
+  useEffect(() => {
+    let lock: any = null;
+    const request = async () => {
+      try { lock = await (navigator as any).wakeLock?.request('screen'); } catch { /* navegador sem suporte */ }
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') request(); };
+    request();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { document.removeEventListener('visibilitychange', onVisible); lock?.release?.().catch?.(() => {}); };
+  }, []);
+
+  useEffect(() => {
+    const on = () => setFs(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', on);
+    return () => document.removeEventListener('fullscreenchange', on);
+  }, []);
+
+  const toggleFs = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
 
   return (
-    <div className="w-screen h-screen flex flex-col overflow-hidden"
-         style={{ background: '#080A0E', color: '#E9EDF2', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="w-screen h-screen overflow-hidden relative"
+         style={{ ['--u' as any]: 'min(calc(100vw / 1920), calc(100vh / 1080))', background: C.bg, color: C.text,
+                  fontFamily: 'Inter, system-ui, sans-serif', cursor: idle ? 'none' : 'default' }}>
+      {children}
 
-      {/* Topbar */}
-      <div className="flex items-center gap-5 px-10 flex-shrink-0"
-           style={{ height: 68, borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0E1117' }}>
-        <Brasao size={36} color="#1447E6" chamberInfo={chamberInfo} />
-        <div>
-          <div className="text-[10px] font-mono-jet tracking-widest" style={{ color: '#4B5563', letterSpacing: '0.1em' }}>
-            {chamberInfo ? `${chamberInfo.name.toUpperCase()} · ${chamberInfo.state.toUpperCase()}` : 'CÂMARA MUNICIPAL'}
-          </div>
-          <div className="font-semibold text-sm mt-0.5 flex items-center gap-2" style={{ letterSpacing: '-0.01em' }}>
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: '#1447E6' }} />
-            {tipo === 'grande' ? 'Grande Expediente' : 'Pequeno Expediente'}
-          </div>
-        </div>
-        <div className="ml-auto"><ConnectionBadge connected={connected} /></div>
+      <div className="fixed flex items-center gap-2 transition-opacity duration-300"
+           style={{ right: u(28), bottom: u(28), zIndex: 60, opacity: idle && !soundNeeded ? 0 : 1, pointerEvents: idle && !soundNeeded ? 'none' : 'auto' }}>
+        {soundNeeded && (
+          <button onClick={onActivateSound} className="flex items-center gap-2 rounded-full font-semibold"
+                  style={{ padding: `${u(12)} ${u(20)}`, fontSize: u(18), background: C.amber, color: '#0B0D10' }}>
+            <Volume2 style={{ width: u(20), height: u(20) }} /> Clique para ativar o som
+          </button>
+        )}
+        <button onClick={toggleFs} title={fs ? 'Sair da tela cheia' : 'Tela cheia'} className="flex items-center gap-2 rounded-full font-semibold"
+                style={{ padding: `${u(12)} ${u(20)}`, fontSize: u(18), background: 'rgba(255,255,255,0.1)', color: C.text, border: `1px solid ${C.border}` }}>
+          {fs ? <Minimize2 style={{ width: u(20), height: u(20) }} /> : <Maximize2 style={{ width: u(20), height: u(20) }} />}
+          {fs ? 'Sair da tela cheia' : 'Tela cheia'}
+        </button>
       </div>
 
-      {/* Main body */}
-      <div className="flex flex-1 overflow-hidden">
-
-        {/* Left — speaker photo (hero) */}
-        <div className="relative overflow-hidden" style={{ flex: '1.15' }}>
-          {/* Photo */}
-          {vereador.avatarUrl ? (
-            <img src={`${MEDIA}${vereador.avatarUrl}`} alt={vereador.name}
-                 className="absolute inset-0 w-full h-full object-cover object-top" />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center"
-                 style={{ background: 'linear-gradient(160deg, #1a1f2e 0%, #0d1117 100%)' }}>
-              <AvatarFallback name={vereador.name} initials={vereador.initials} size={280} />
-            </div>
-          )}
-
-          {/* Gradient overlay — bottom fade for name readability */}
-          <div className="absolute inset-0 pointer-events-none"
-               style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 40%, transparent 70%)' }} />
-
-          {/* Top-left type badge */}
-          <div className="absolute top-8 left-8 flex items-center gap-2 px-4 py-2 rounded-full"
-               style={{ background: 'oklch(0.52 0.16 255 / 0.18)', border: '1px solid oklch(0.52 0.16 255 / 0.35)', backdropFilter: 'blur(8px)' }}>
-            <span className="w-2 h-2 rounded-full" style={{ background: 'oklch(0.70 0.16 255)' }} />
-            <span className="text-xs font-mono-jet font-semibold tracking-widest"
-                  style={{ color: 'oklch(0.80 0.14 255)', letterSpacing: '0.1em' }}>
-              {tipo === 'grande' ? 'GRANDE EXPEDIENTE' : 'PEQUENO EXPEDIENTE'}
-            </span>
-          </div>
-
-          {/* Bottom name block */}
-          <div className="absolute bottom-0 left-0 right-0 px-10 pb-10">
-            {vereador.title && (
-              <p className="text-sm font-mono-jet mb-1" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>
-                {vereador.title.toUpperCase()}
-              </p>
-            )}
-            <h2 className="font-tight font-black leading-none" style={{ fontSize: 58, letterSpacing: '-0.03em', color: '#FFFFFF' }}>
-              {vereador.name}
-            </h2>
-            {vereador.party && (
-              <p className="mt-2 font-mono-jet font-semibold text-base" style={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.06em' }}>
-                {vereador.party}
-              </p>
-            )}
-          </div>
-
-          {/* Aparte overlay */}
-          {aparte && (
-            <div className="absolute bottom-8 left-8 right-8 rounded-2xl p-5 flex items-center gap-4"
-                 style={{ background: 'rgba(0,20,10,0.92)', border: '1px solid #14532d', backdropFilter: 'blur(12px)' }}>
-              <div className="flex-1">
-                <span className="text-[10px] font-mono-jet font-semibold px-2 py-0.5 rounded-full inline-block mb-1"
-                      style={{ background: 'rgba(16,185,129,0.2)', color: '#34d399', letterSpacing: '0.08em' }}>APARTE</span>
-                <p className="text-white font-semibold">{aparte.vereador.name}</p>
-              </div>
-              <div className="font-mono-jet font-bold text-4xl" style={{ color: '#34d399', fontVariantNumeric: 'tabular-nums' }}>
-                {String(Math.floor(aparte.tempoRestante / 60)).padStart(2, '0')}:{String(aparte.tempoRestante % 60).padStart(2, '0')}
-              </div>
-            </div>
-          )}
+      {offline && (
+        <div className="fixed left-0 right-0 flex items-center justify-center gap-3 font-semibold"
+             style={{ bottom: 0, zIndex: 70, padding: u(18), fontSize: u(24), background: 'rgba(245,158,11,0.96)', color: '#1A1203' }}>
+          <WifiOff style={{ width: u(28), height: u(28) }} /> Conexão perdida — tentando reconectar. As informações podem estar desatualizadas.
         </div>
-
-        {/* Right — timer */}
-        <div className="flex flex-col items-center justify-center relative overflow-hidden"
-             style={{ flex: 1, background: '#07090C', borderLeft: '1px solid rgba(255,255,255,0.04)' }}>
-          {/* Background glow */}
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: `radial-gradient(600px 400px at 50% 45%, ${timerGlow}, transparent 70%)`,
-            transition: 'background 0.5s',
-          }} />
-
-          {/* Status label */}
-          <div className="relative mb-6 text-[11px] font-mono-jet tracking-widest"
-               style={{ color: paused ? '#f59e0b' : '#ffffff', letterSpacing: '0.14em' }}>
-            {paused ? '⏸ PAUSADO · APARTE EM ANDAMENTO' : 'TEMPO RESTANTE'}
-          </div>
-
-          {/* Timer number */}
-          <div className="relative font-mono-jet font-black"
-               style={{
-                 fontSize: 148,
-                 fontVariantNumeric: 'tabular-nums',
-                 lineHeight: 0.9,
-                 letterSpacing: '-0.05em',
-                 color: timerColor,
-                 transition: 'color 0.5s',
-                 textShadow: `0 0 80px ${timerGlow}, 0 0 20px ${timerGlow}`,
-               }}>
-            {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
-          </div>
-
-          {/* Status sub-label */}
-          <div style={{ height: 28, display: 'flex', alignItems: 'center', marginTop: 12 }}>
-            {urgente && (
-              <div className="text-sm font-mono-jet font-bold animate-pulse"
-                   style={{ color: '#ef4444', letterSpacing: '0.16em' }}>● ENCERRANDO</div>
-            )}
-          </div>
-
-          {/* Progress bar — straight line below timer */}
-          <div className="relative mt-6" style={{ width: arcW, height: 10 }}>
-            <svg width={arcW} height={10}>
-              {/* Track */}
-              <line x1="0" y1="5" x2={arcW} y2="5"
-                    stroke="rgba(255,255,255,0.08)" strokeWidth="6" strokeLinecap="round" />
-              {/* Filled */}
-              <line x1="0" y1="5" x2={arcW} y2="5"
-                    stroke={timerColor} strokeWidth="6" strokeLinecap="round"
-                    pathLength="100"
-                    strokeDasharray={`${pct * 100} 100`}
-                    style={{ transition: 'stroke-dasharray 0.9s linear, stroke 0.5s',
-                             filter: `drop-shadow(0 0 6px ${timerColor})` }} />
-            </svg>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
-/* ── Tela Quórum ──────────────────────────────────────────── */
-function TelaoQuorum({ vereadores, presentes, connected, mm, ss, sessionInfo, chamberInfo }: {
-  vereadores: VereadorPresente[]; presentes: Set<string>;
-  connected: boolean; mm: string; ss: string;
-  sessionInfo?: SessionInfo | null; chamberInfo?: ChamberInfo | null;
+/* ── Cabeçalho comum ────────────────────────────────────────────────────── */
+function Header({ chamber, session, phaseLabel, now, presentCount, seats, quorum, elapsed, connected }: {
+  chamber: ChamberInfo | null; session: SessionInfo | null; phaseLabel: string | null; now: Date;
+  presentCount: number; seats: number; quorum: number; elapsed: number; connected: boolean;
+}) {
+  const ok = presentCount >= quorum && quorum > 0;
+  return (
+    <header className="flex items-center flex-shrink-0"
+            style={{ gap: u(28), padding: `${u(22)} ${u(44)}`, background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+      <Brasao chamber={chamber} size={84} />
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-semibold uppercase" style={{ fontSize: u(18), letterSpacing: '0.14em', color: C.muted }}>
+          {chamber ? `${chamber.name} · ${chamber.city}/${chamber.state}` : ' '}
+        </div>
+        <div className="truncate font-bold" style={{ fontSize: u(36), letterSpacing: '-0.02em', lineHeight: 1.15, marginTop: u(2) }}>
+          {session ? fullSessionTitle(session.number, session.type, chamber) : ' '}
+        </div>
+        <div className="flex items-center" style={{ gap: u(14), marginTop: u(6), fontSize: u(19), color: C.muted }}>
+          {session && <span>{new Date(session.date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</span>}
+          {session?.startedAt && <><span style={{ color: C.dim }}>·</span><span>Iniciada às {new Date(session.startedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span></>}
+          {phaseLabel && (
+            <span className="font-semibold rounded-full" style={{ padding: `${u(5)} ${u(16)}`, background: 'rgba(79,123,255,0.18)', color: '#AFC3FF', border: '1px solid rgba(79,123,255,0.35)' }}>
+              {phaseLabel}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-stretch flex-shrink-0" style={{ gap: u(34) }}>
+        <HeaderStat label="Presentes" value={`${presentCount}/${seats || '–'}`} />
+        <HeaderStat label="Quórum" value={quorum ? (ok ? 'Atingido' : `Faltam ${quorum - presentCount}`) : '–'} color={quorum ? (ok ? C.green : C.amber) : undefined} />
+        <HeaderStat label="Sessão" value={elapsed ? fmtElapsed(elapsed) : '–'} />
+        <div className="flex flex-col items-end justify-center" style={{ paddingLeft: u(34), borderLeft: `1px solid ${C.border}` }}>
+          <div className="font-bold" style={{ fontSize: u(54), lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+            {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+          <div className="flex items-center font-semibold uppercase" style={{ gap: u(8), marginTop: u(6), fontSize: u(15), letterSpacing: '0.12em', color: connected ? C.green : C.dim }}>
+            <span className="rounded-full" style={{ width: u(10), height: u(10), background: connected ? C.green : C.dim, boxShadow: connected ? `0 0 ${u(10)} ${C.green}` : 'none' }} />
+            {connected ? 'Ao vivo' : 'Offline'}
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function HeaderStat({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div className="flex flex-col justify-center">
+      <div className="font-semibold uppercase" style={{ fontSize: u(15), letterSpacing: '0.14em', color: C.dim }}>{label}</div>
+      <div className="font-bold" style={{ fontSize: u(36), lineHeight: 1.1, letterSpacing: '-0.02em', color: color ?? C.text, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+    </div>
+  );
+}
+
+/* ── Presença: grade que ocupa a tela inteira ──────────────────────────── */
+function gridFor(n: number) {
+  if (n <= 0) return { cols: 1, rows: 1 };
+  const cols = n <= 3 ? n : n <= 4 ? 4 : n <= 8 ? Math.ceil(n / 2) : n <= 10 ? 5 : n <= 12 ? 6 : n <= 15 ? 5 : n <= 18 ? 6 : 7;
+  return { cols, rows: Math.ceil(n / cols) };
+}
+
+function QuorumScreen({ header, vereadores, presentes, quorum, seats }: {
+  header: React.ReactNode; vereadores: VereadorPresente[]; presentes: Set<string>; quorum: number; seats: number;
 }) {
   const presentCount = vereadores.filter(v => presentes.has(v.id)).length;
-  const total = vereadores.length;
-  const pct = total > 0 ? Math.round((presentCount / total) * 100) : 0;
-  const quorumOk = pct >= 50;
+  const { cols, rows } = gridFor(vereadores.length);
+  const photo = rows <= 1 ? 260 : rows === 2 ? 200 : rows === 3 ? 138 : 104;
+  const ok = quorum > 0 && presentCount >= quorum;
+  const pct = (n: number) => `${Math.min(100, (n / Math.max(seats, 1)) * 100)}%`;
 
   return (
-    <div className="w-screen h-screen flex flex-col overflow-hidden"
-         style={{ background: '#0B0D10', color: '#E9EDF2', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Topbar */}
-      <div className="flex items-center gap-5 px-10 flex-shrink-0"
-           style={{ minHeight: 110, borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#111418' }}>
-        <Brasao size={80} color="#1447E6" chamberInfo={chamberInfo} />
-        <div>
-          <div className="font-mono-jet font-semibold tracking-widest" style={{ fontSize: 14, color: '#7A8494', letterSpacing: '0.12em' }}>
-            {chamberInfo ? `${chamberInfo.name.toUpperCase()} · ${chamberInfo.state.toUpperCase()}` : 'CÂMARA MUNICIPAL'}
-          </div>
-          <div className="font-tight font-bold mt-1" style={{ fontSize: 22, letterSpacing: '-0.02em', textTransform: 'uppercase' }}>
-            {sessionInfo ? fullSessionTitle(sessionInfo.number, sessionInfo.type, chamberInfo) : 'Verificação de Quórum'}
-          </div>
-          {sessionInfo && (
-            <div className="font-mono-jet mt-1 flex items-center gap-2" style={{ fontSize: 13, color: '#7A8494' }}>
-              <span>
-                {new Date(sessionInfo.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-              </span>
-              {sessionInfo.startedAt && (
-                <>
-                  <span style={{ color: '#3B4451' }}>·</span>
-                  <span>Iniciada às {new Date(sessionInfo.startedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="ml-auto flex items-center gap-6">
-          <StatTop label="PRESENTES" value={`${presentCount}/${total}`} />
-          <div className="w-px h-9" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          <div>
-            <div className="text-[10px] font-mono-jet" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>QUÓRUM</div>
-            <div className="font-tight font-semibold text-2xl mt-0.5"
-                 style={{ color: quorumOk ? 'oklch(0.70 0.16 150)' : 'oklch(0.68 0.20 25)', letterSpacing: '-0.02em' }}>
-              {pct}%
-            </div>
-          </div>
-          <div className="w-px h-9" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          <div>
-            <div className="text-[10px] font-mono-jet" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>TEMPO</div>
-            <div className="font-mono-jet font-medium text-2xl mt-0.5" style={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-              {mm}:{ss}
-            </div>
-          </div>
-          <ConnectionBadge connected={connected} />
-        </div>
-      </div>
-
-      {/* Grid */}
-      <div className="flex-1 overflow-auto p-10">
+    <div className="w-full h-full flex flex-col">
+      {header}
+      <main className="flex-1 min-h-0" style={{ padding: `${u(32)} ${u(44)} ${u(16)}` }}>
         {vereadores.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="font-mono-jet text-lg" style={{ color: '#5B636D' }}>Aguardando vereadores...</p>
-          </div>
+          <div className="h-full flex items-center justify-center" style={{ fontSize: u(28), color: C.dim }}>Carregando vereadores…</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+          <div className="h-full" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)`, gap: u(20) }}>
             {vereadores.map(v => {
-              const presente = presentes.has(v.id);
-              const avatarSrc = v.avatarUrl
-                ? (v.avatarUrl.startsWith('http') ? v.avatarUrl : `${MEDIA}${v.avatarUrl}`)
-                : null;
+              const on = presentes.has(v.id);
               return (
-                <div key={v.id} className="rounded-2xl flex flex-col items-center"
-                     style={{ padding: '24px 18px 18px',
-                              background: presente ? '#0a1f12' : '#14171D',
-                              border: `1px solid ${presente ? 'rgba(34,197,94,0.30)' : 'rgba(255,255,255,0.07)'}`,
-                              boxShadow: presente ? '0 0 0 1px rgba(34,197,94,0.08), 0 6px 24px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.2)',
-                              gap: 12,
-                              transition: 'background 0.6s ease, border-color 0.6s ease, box-shadow 0.6s ease' }}>
-                  {/* Avatar */}
-                  {avatarSrc ? (
-                    <img src={avatarSrc} alt={v.name}
-                         style={{ width: 92, height: 92, borderRadius: '50%', objectFit: 'cover',
-                                  border: presente ? '3px solid rgba(34,197,94,0.65)' : '3px solid rgba(255,255,255,0.12)',
-                                  transition: 'border-color 0.6s ease',
-                                  filter: presente ? 'none' : 'grayscale(70%) brightness(0.7)' }} />
-                  ) : (
-                    <div style={{ width: 92, height: 92, borderRadius: '50%',
-                                  background: presente ? 'rgba(34,197,94,0.14)' : '#1E2330',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontSize: 28, fontWeight: 800,
-                                  color: presente ? '#4ade80' : '#4B5563',
-                                  border: presente ? '3px solid rgba(34,197,94,0.45)' : '3px solid rgba(255,255,255,0.09)',
-                                  transition: 'all 0.6s ease' }}>
-                      {v.initials || v.name.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  {/* Nome + partido */}
-                  <div className="text-center w-full" style={{ gap: 3 }}>
-                    <p className="font-semibold leading-snug truncate"
-                       style={{ fontSize: 14, color: presente ? '#E9EDF2' : '#7A8494',
-                                transition: 'color 0.6s ease' }}>
-                      {v.name.split(' ').slice(0, 2).join(' ')}
-                    </p>
-                    {v.party && (
-                      <p className="font-mono-jet mt-1 truncate"
-                         style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.06em',
-                                  color: presente ? '#4ade80' : '#404858',
-                                  transition: 'color 0.6s ease' }}>
-                        {v.party}
-                      </p>
+                <div key={v.id} className="flex flex-col items-center justify-center text-center min-h-0"
+                     style={{ borderRadius: u(24), padding: u(18), gap: u(14),
+                              background: on ? 'linear-gradient(180deg, rgba(34,197,94,0.12), rgba(34,197,94,0.03))' : C.surface,
+                              border: `${u(2)} solid ${on ? 'rgba(34,197,94,0.45)' : C.border}`,
+                              transition: 'all .6s ease' }}>
+                  <div className="relative flex-shrink-0">
+                    <Photo src={mediaUrl(v.avatarUrl)} name={v.name} initials={v.initials} size={photo} dim={!on}
+                           ring={on ? C.green : 'rgba(255,255,255,0.12)'} />
+                    {on && (
+                      <span className="absolute rounded-full flex items-center justify-center"
+                            style={{ right: u(4), bottom: u(4), width: u(photo * 0.24), height: u(photo * 0.24), background: C.green, border: `${u(4)} solid ${C.bg}` }}>
+                        <CheckCircle2 style={{ width: '62%', height: '62%', color: '#04230F' }} />
+                      </span>
                     )}
                   </div>
-                  {/* Badge status */}
-                  <span className="font-mono-jet font-bold px-3 py-1 rounded-full"
-                        style={{ fontSize: 10, letterSpacing: '0.10em',
-                                 background: presente ? 'rgba(34,197,94,0.16)' : 'rgba(255,255,255,0.05)',
-                                 color: presente ? '#4ade80' : '#5B636D',
-                                 border: `1px solid ${presente ? 'rgba(34,197,94,0.32)' : 'rgba(255,255,255,0.09)'}`,
-                                 transition: 'all 0.6s ease' }}>
-                    {presente ? '● PRESENTE' : 'AUSENTE'}
+                  <div className="min-w-0 w-full">
+                    <div className="font-bold truncate" style={{ fontSize: u(rows >= 3 ? 24 : 30), letterSpacing: '-0.01em', color: on ? C.text : C.muted }}>
+                      {shortName(v.name)}
+                    </div>
+                    <div className="truncate" style={{ fontSize: u(rows >= 3 ? 16 : 19), marginTop: u(4), color: on ? '#86EFAC' : C.dim }}>
+                      {[v.party, v.role === 'presidente' ? 'Presidente' : v.role === 'vice_presidente' ? 'Vice-presidente' : v.title].filter(Boolean).join(' · ')}
+                    </div>
+                  </div>
+                  <span className="font-bold uppercase rounded-full" style={{ fontSize: u(15), letterSpacing: '0.12em', padding: `${u(5)} ${u(14)}`,
+                        background: on ? 'rgba(34,197,94,0.16)' : 'rgba(255,255,255,0.05)', color: on ? '#4ADE80' : C.dim }}>
+                    {on ? 'Presente' : 'Ausente'}
                   </span>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
-
-      {/* Footer barra de progresso */}
-      <div className="flex-shrink-0 px-10 pb-6">
-        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-          <div className="h-full rounded-full transition-all"
-               style={{ width: `${pct}%`, background: quorumOk ? 'oklch(0.70 0.16 150)' : 'oklch(0.68 0.20 25)',
-                         transition: 'width 1s ease, background 0.5s' }} />
+      </main>
+      <footer className="flex-shrink-0" style={{ padding: `${u(10)} ${u(44)} ${u(28)}` }}>
+        <div className="flex items-baseline justify-between" style={{ marginBottom: u(10) }}>
+          <span className="font-bold uppercase" style={{ fontSize: u(22), letterSpacing: '0.1em', color: ok ? C.green : C.amber }}>
+            {ok ? 'Quórum atingido' : quorum ? `Quórum insuficiente — faltam ${quorum - presentCount}` : 'Verificação de quórum'}
+          </span>
+          <span style={{ fontSize: u(20), color: C.muted }}>{presentCount} de {seats} vereadores · mínimo {quorum}</span>
         </div>
-        <p className="text-xs font-mono-jet mt-2 text-center"
-           style={{ color: quorumOk ? 'oklch(0.70 0.16 150)' : 'oklch(0.68 0.20 25)', letterSpacing: '0.06em' }}>
-          {quorumOk ? `QUÓRUM ATINGIDO · ${presentCount} de ${total} vereadores presentes` : `QUÓRUM INSUFICIENTE · ${presentCount} de ${total} · necessário > 50%`}
-        </p>
-      </div>
+        <div className="relative rounded-full" style={{ height: u(14), background: 'rgba(255,255,255,0.07)' }}>
+          <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: pct(presentCount), background: ok ? C.green : C.amber, transition: 'width 1s ease, background .5s' }} />
+          <div className="absolute" style={{ left: pct(quorum), top: u(-6), bottom: u(-6), width: u(3), background: C.text, borderRadius: u(2) }} />
+        </div>
+      </footer>
     </div>
   );
 }
 
-/* ── Card de transmissão ─────────────────────────────────── */
-function StreamCard({ sessionInfo }: { sessionInfo?: SessionInfo | null }) {
-  const youtubeUrl = sessionInfo?.youtubeUrl;
-  const rawThumb = sessionInfo?.youtubeThumbnailUrl;
-  const thumbnailUrl = (rawThumb
-    ? (rawThumb.startsWith('http') ? rawThumb : `${MEDIA}${rawThumb}`)
-    : null)
-    || (youtubeUrl ? (() => {
-        try {
-          const u = new URL(youtubeUrl);
-          let id: string | null = null;
-          if (u.hostname.includes('youtu.be')) id = u.pathname.slice(1).split('?')[0];
-          else if (u.hostname.includes('youtube.com')) {
-            id = u.pathname.startsWith('/live/')
-              ? u.pathname.split('/live/')[1].split('?')[0]
-              : u.searchParams.get('v');
-          }
-          return id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : null;
-        } catch { return null; }
-      })()
-    : null);
-
-  const displayUrl = youtubeUrl
-    ? youtubeUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\?.*/, '')
-    : null;
-
-  if (!youtubeUrl) {
-    return (
-      <div className="mt-auto rounded-xl p-4 flex items-center gap-3"
-           style={{ background: '#15191F', border: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="w-28 h-16 rounded-lg flex items-center justify-center flex-shrink-0"
-             style={{ background: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 8px, transparent 8px 16px)' }}>
-          <Video size={22} style={{ color: '#5B636D' }} />
-        </div>
-        <div>
-          <div className="text-[10px] font-mono-jet tracking-widest mb-1"
-               style={{ color: '#5B636D', letterSpacing: '0.1em' }}>TRANSMISSÃO</div>
-          <div className="text-sm" style={{ color: '#5B636D' }}>Não configurada</div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <a href={youtubeUrl} target="_blank" rel="noreferrer"
-       className="mt-auto rounded-xl p-4 flex items-center gap-3 no-underline group"
-       style={{ background: '#15191F', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', textDecoration: 'none' }}>
-      {/* Thumbnail */}
-      <div className="rounded-lg overflow-hidden flex-shrink-0"
-           style={{ width: 112, height: 63, background: '#0D1117', position: 'relative' }}>
-        {thumbnailUrl ? (
-          <img src={thumbnailUrl} alt="thumbnail"
-               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center"
-               style={{ background: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 8px, transparent 8px 16px)' }}>
-            <Video size={22} style={{ color: '#5B636D' }} />
-          </div>
-        )}
-        {/* play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center"
-             style={{ background: 'rgba(0,0,0,0.35)' }}>
-          <div className="w-7 h-7 rounded-full flex items-center justify-center"
-               style={{ background: 'rgba(220,38,38,0.9)' }}>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="white">
-              <path d="M2 1.5 L9 5 L2 8.5 Z" />
-            </svg>
-          </div>
-        </div>
-      </div>
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="text-[10px] font-mono-jet tracking-widest mb-1"
-             style={{ color: '#5B636D', letterSpacing: '0.1em' }}>TRANSMISSÃO AO VIVO · TV CÂMARA</div>
-        <div className="text-sm font-medium truncate" style={{ color: '#9AA3AE' }}>{displayUrl}</div>
-      </div>
-      {/* Live badge */}
-      <div className="ml-auto flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-           style={{ border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.08)' }}>
-        <span className="w-1.5 h-1.5 rounded-full animate-pulse-dot" style={{ background: '#dc2626' }} />
-        <span className="text-[10px] font-mono-jet font-bold" style={{ color: '#dc2626', letterSpacing: '0.08em' }}>LIVE</span>
-      </div>
-    </a>
-  );
-}
-
-/* ── Ticker de votos ─────────────────────────────────────── */
-function VotoTicker({
-  vereadores, presentes, votesMap,
-}: {
-  vereadores: VereadorPresente[];
-  presentes: Set<string>;
-  votesMap: Record<string, string>;
+/* ── Votação ────────────────────────────────────────────────────────────── */
+function VotingScreen({ header, item, counts, countsHidden, total, now, vereadores, presentes, votesMap, presentCount }: {
+  header: React.ReactNode; item: any; counts: { sim: number; nao: number; abstencao: number }; countsHidden: boolean;
+  total: number; now: Date; vereadores: VereadorPresente[]; presentes: Set<string>; votesMap: Record<string, string>; presentCount: number;
 }) {
-  const avatarColors = ['#3B82F6','#8B5CF6','#10B981','#F59E0B','#EF4444','#EC4899'];
-  const presentList = vereadores.filter(v => presentes.has(v.id));
-
-  if (presentList.length === 0) return (
-    <div className="flex-shrink-0 flex items-center justify-center"
-         style={{ height: 80, borderTop: '1px solid rgba(255,255,255,0.06)', background: '#111418' }}>
-      <span className="font-mono-jet text-xs" style={{ color: '#5B636D', letterSpacing: '0.08em' }}>
-        AGUARDANDO VEREADORES...
-      </span>
-    </div>
-  );
+  const closed = item.status === 'aprovado' || item.status === 'rejeitado';
+  const approved = item.status === 'aprovado';
+  const opened = item.votingOpenedAt ? new Date(item.votingOpenedAt).getTime() : now.getTime();
+  const end = closed && item.votingClosedAt ? new Date(item.votingClosedAt).getTime() : now.getTime();
+  const secs = Math.max(0, Math.floor((end - opened) / 1000));
+  const timer = `${String(Math.floor(secs / 60)).padStart(2, '0')}:${String(secs % 60).padStart(2, '0')}`;
+  const base = Math.max(presentCount, total, 1);
 
   return (
-    <div className="flex flex-shrink-0 overflow-hidden"
-         style={{ height: 80, borderTop: '1px solid rgba(255,255,255,0.06)', background: '#111418' }}>
-      {presentList.map((v, i) => {
-        const choice = votesMap[v.id];
-        const voted = !!choice;
-        const isSecreta = choice === 'secreta';
-        const color = choice === 'sim' ? '#22c55e'
-                    : choice === 'nao' ? '#ef4444'
-                    : choice === 'abstencao' ? '#6b7280'
-                    : null;
-        const avatarBg = avatarColors[v.name.charCodeAt(0) % avatarColors.length];
-        const avatarSrc = v.avatarUrl
-          ? (v.avatarUrl.startsWith('http') ? v.avatarUrl : `${MEDIA}${v.avatarUrl}`)
-          : null;
-        const voteLabel = isSecreta ? '●●●'
-                        : choice === 'sim' ? 'SIM'
-                        : choice === 'nao' ? 'NÃO'
-                        : choice === 'abstencao' ? 'ABST'
-                        : null;
+    <div className="w-full h-full flex flex-col">
+      {header}
+      <main className="flex-1 min-h-0 flex" style={{ gap: u(28), padding: `${u(32)} ${u(44)}` }}>
+        {/* Matéria */}
+        <section className="flex flex-col min-w-0" style={{ flex: 1.15 }}>
+          <div className="flex items-center flex-wrap" style={{ gap: u(14), marginBottom: u(22) }}>
+            {closed ? (
+              <span className="font-bold uppercase rounded-full" style={{ fontSize: u(18), letterSpacing: '0.12em', padding: `${u(8)} ${u(18)}`, background: 'rgba(255,255,255,0.08)', color: C.muted }}>
+                Votação encerrada
+              </span>
+            ) : (
+              <span className="flex items-center font-bold uppercase rounded-full" style={{ gap: u(10), fontSize: u(18), letterSpacing: '0.12em', padding: `${u(8)} ${u(18)}`, background: 'rgba(79,123,255,0.18)', color: '#AFC3FF' }}>
+                <span className="rounded-full animate-pulse" style={{ width: u(12), height: u(12), background: C.accent }} /> Em votação
+              </span>
+            )}
+            <span className="font-semibold" style={{ fontSize: u(22), color: C.muted }}>{item.number} · {item.type}</span>
+          </div>
+          <h1 className="font-bold" style={{ fontSize: u(58), lineHeight: 1.08, letterSpacing: '-0.03em', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {item.title}
+          </h1>
+          {item.description && (
+            <p style={{ fontSize: u(24), lineHeight: 1.45, color: C.muted, marginTop: u(18), display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {item.description}
+            </p>
+          )}
+          <div className="grid mt-auto" style={{ gridTemplateColumns: 'repeat(3, auto)', justifyContent: 'start', gap: `${u(10)} ${u(48)}`, paddingTop: u(24) }}>
+            <Meta label="Autoria" value={item.authorName || '—'} />
+            <Meta label="Quórum de aprovação" value={MAJORITY_LABEL[item.majority as keyof typeof MAJORITY_LABEL] ?? 'Maioria simples'} />
+            <Meta label="Votação" value={item.votingType === 'secreta' ? 'Secreta' : 'Aberta (nominal)'} />
+          </div>
+        </section>
+
+        {/* Placar */}
+        <section className="flex flex-col min-h-0" style={{ flex: 1, borderRadius: u(28), padding: closed ? `${u(24)} ${u(34)}` : u(34), background: C.surface, border: `1px solid ${C.border}`, gap: u(closed ? 12 : 22) }}>
+          <div className="flex items-baseline justify-between">
+            <span className="font-bold uppercase" style={{ fontSize: u(18), letterSpacing: '0.14em', color: C.dim }}>{closed ? 'Resultado final' : 'Placar parcial'}</span>
+            <span className="font-bold" style={{ fontSize: u(40), fontVariantNumeric: 'tabular-nums', color: C.muted }}>{timer}</span>
+          </div>
+
+          {countsHidden && !closed ? (
+            <div className="flex-1 flex flex-col justify-center" style={{ gap: u(20) }}>
+              <SecretTally total={total} dark large />
+              <p style={{ fontSize: u(20), color: C.muted }}>Votação secreta: o placar aparece quando a votação for encerrada.</p>
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 flex flex-col justify-center" style={{ gap: u(closed ? 14 : 26) }}>
+              <ScoreRow label="Sim" value={counts.sim} base={base} color={C.green} compact={closed} />
+              <ScoreRow label="Não" value={counts.nao} base={base} color={C.red} compact={closed} />
+              <ScoreRow label="Abstenção" value={counts.abstencao} base={base} color={C.gray} compact={closed} />
+            </div>
+          )}
+
+          <div style={{ paddingTop: u(closed ? 12 : 18), borderTop: `1px solid ${C.border}` }}>
+            <div className="flex justify-between" style={{ fontSize: u(20), color: C.muted, marginBottom: u(10) }}>
+              <span>Votaram</span><b style={{ color: C.text }}>{total} de {presentCount} presentes</b>
+            </div>
+            <div className="rounded-full" style={{ height: u(10), background: 'rgba(255,255,255,0.07)' }}>
+              <div className="h-full rounded-full" style={{ width: `${Math.min(100, (total / Math.max(presentCount, 1)) * 100)}%`, background: C.accent, transition: 'width .6s ease' }} />
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {closed && (
+        <div className="flex items-center justify-center flex-shrink-0" style={{ gap: u(26), padding: `${u(22)} ${u(44)}`,
+             background: approved ? 'linear-gradient(90deg, rgba(34,197,94,0.22), rgba(34,197,94,0.08))' : 'linear-gradient(90deg, rgba(239,68,68,0.24), rgba(239,68,68,0.08))',
+             borderTop: `${u(3)} solid ${approved ? C.green : C.red}` }}>
+          {approved ? <CheckCircle2 style={{ width: u(72), height: u(72), color: C.green }} /> : <XCircle style={{ width: u(72), height: u(72), color: C.red }} />}
+          <div>
+            <div className="font-black uppercase" style={{ fontSize: u(76), lineHeight: 1, letterSpacing: '-0.02em', color: approved ? '#4ADE80' : '#F87171' }}>
+              {approved ? 'Aprovado' : 'Rejeitado'}
+            </div>
+            {item.resultExplanation && <div style={{ fontSize: u(22), color: C.muted, marginTop: u(8) }}>{item.resultExplanation}</div>}
+          </div>
+        </div>
+      )}
+
+      <VoteStrip vereadores={vereadores} presentes={presentes} votesMap={votesMap} />
+    </div>
+  );
+}
+
+function Meta({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <div style={{ gridRow: 1 }} className="font-semibold uppercase"><span style={{ fontSize: u(15), letterSpacing: '0.14em', color: C.dim }}>{label}</span></div>
+      <div style={{ gridRow: 2, fontSize: u(24), fontWeight: 600 }}>{value}</div>
+    </>
+  );
+}
+
+function ScoreRow({ label, value, base, color, compact }: { label: string; value: number; base: number; color: string; compact?: boolean }) {
+  return (
+    <div>
+      <div className="flex items-end justify-between" style={{ marginBottom: u(compact ? 6 : 10) }}>
+        <span className="font-bold uppercase" style={{ fontSize: u(compact ? 22 : 26), letterSpacing: '0.08em', color: C.muted }}>{label}</span>
+        <span className="font-black" style={{ fontSize: u(compact ? 64 : 96), lineHeight: 0.85, letterSpacing: '-0.04em', color, fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      </div>
+      <div className="rounded-full" style={{ height: u(compact ? 12 : 16), background: 'rgba(255,255,255,0.06)' }}>
+        <div className="h-full rounded-full" style={{ width: `${(value / base) * 100}%`, background: color, transition: 'width .6s ease' }} />
+      </div>
+    </div>
+  );
+}
+
+/** Faixa inferior: cada vereador presente e o voto dele (secreta mostra só que votou). */
+function VoteStrip({ vereadores, presentes, votesMap }: { vereadores: VereadorPresente[]; presentes: Set<string>; votesMap: Record<string, string> }) {
+  const list = vereadores.filter(v => presentes.has(v.id));
+  if (!list.length) return null;
+  const color = (c?: string) => c === 'sim' ? C.green : c === 'nao' ? C.red : c === 'abstencao' ? C.gray : c === 'secreta' ? C.accent : null;
+  const label = (c?: string) => c === 'sim' ? 'SIM' : c === 'nao' ? 'NÃO' : c === 'abstencao' ? 'ABST.' : c === 'secreta' ? 'VOTOU' : 'AGUARDANDO';
+  return (
+    <div className="flex flex-shrink-0" style={{ height: u(132), background: C.surface, borderTop: `1px solid ${C.border}` }}>
+      {list.map(v => {
+        const c = votesMap[v.id];
+        const col = color(c);
         return (
-          <div key={v.id}
-               style={{
-                 flex: 1, height: '100%', padding: '0 12px',
-                 display: 'flex', alignItems: 'center', gap: 8,
-                 borderRight: i < presentList.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                 background: color ? `${color}10` : 'transparent',
-                 position: 'relative',
-               }}>
-            {/* linha colorida no topo ao votar */}
-            {voted && (
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-                            background: isSecreta ? '#1447E6' : color! }} />
-            )}
-            {/* avatar */}
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-              overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: avatarBg, fontSize: 12, fontWeight: 700, color: '#fff',
-            }}>
-              {avatarSrc
-                ? <img src={avatarSrc} alt={v.name}
-                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                : (v.initials || v.name.slice(0, 2).toUpperCase())}
+          <div key={v.id} className="flex-1 min-w-0 flex items-center relative" style={{ gap: u(12), padding: `0 ${u(12)}`, borderRight: `1px solid ${C.border}`, background: col ? `${col}14` : 'transparent', transition: 'background .4s' }}>
+            {col && <span className="absolute left-0 right-0 top-0" style={{ height: u(5), background: col }} />}
+            <Photo src={mediaUrl(v.avatarUrl)} name={v.name} initials={v.initials} size={list.length > 7 ? 54 : 64} ring={col ?? 'rgba(255,255,255,0.12)'} dim={!c} />
+            <div className="min-w-0">
+              <div className="font-semibold" style={{ fontSize: u(19), lineHeight: 1.15, color: C.text, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>{shortName(v.name)}</div>
+              <div className="font-black" style={{ fontSize: u(c ? 22 : 15), letterSpacing: '0.06em', marginTop: u(2), color: col ?? C.dim }}>{label(c)}</div>
             </div>
-            {/* nome + partido */}
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '-0.01em',
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            color: '#F1F5F9' }}>
-                {v.name.split(' ').slice(0, 2).join(' ')}
-              </div>
-              {v.party && (
-                <div style={{ fontSize: 10, color: '#5B636D',
-                              fontFamily: 'ui-monospace, monospace', marginTop: 1 }}>
-                  {v.party}
-                </div>
-              )}
-            </div>
-            {/* voto (direita) */}
-            {voteLabel && (
-              <div style={{
-                fontSize: 10, fontWeight: 700,
-                fontFamily: 'ui-monospace, monospace',
-                letterSpacing: '0.06em', flexShrink: 0,
-                color: isSecreta ? '#1447E6' : color!,
-              }}>
-                {voteLabel}
-              </div>
-            )}
           </div>
         );
       })}
@@ -884,68 +628,118 @@ function VotoTicker({
   );
 }
 
-/* ── Componentes auxiliares ──────────────────────────────── */
-function AvatarFallback({ name, initials, size }: { name: string; initials: string | null; size: number }) {
-  const colors = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
-  const color = colors[name.charCodeAt(0) % colors.length];
+/* ── Tempo de fala (expediente) ─────────────────────────────────────────── */
+function ExpedienteScreen({ header, expediente, aparte }: { header: React.ReactNode; expediente: ExpedienteAtivo; aparte: AparteAtivo | null }) {
+  const { vereador, tipo, tempoRestante, duracao, paused } = expediente;
+  const pct = Math.max(0, tempoRestante / Math.max(duracao, 1));
+  const urgente = pct <= 0.2 && !paused;
+  const timerColor = paused ? C.amber : urgente ? C.red : pct <= 0.5 ? C.amber : C.green;
+  const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
   return (
-    <div className="rounded-full flex items-center justify-center font-bold text-white"
-         style={{ width: size, height: size, background: color, fontSize: size * 0.3,
-                  border: '3px solid oklch(0.52 0.16 255 / 0.4)' }}>
+    <div className="w-full h-full flex flex-col">
+      {header}
+      <main className="flex-1 min-h-0 flex">
+        <section className="relative overflow-hidden" style={{ flex: 1.1 }}>
+          {vereador.avatarUrl
+            ? <img src={mediaUrl(vereador.avatarUrl)!} alt={vereador.name} className="absolute inset-0 w-full h-full object-cover object-top" />
+            : <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #1a1f2e, #0d1117)' }}>
+                <Photo src={null} name={vereador.name} initials={vereador.initials} size={320} />
+              </div>}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.3) 45%, transparent 72%)' }} />
+          <span className="absolute font-bold uppercase rounded-full" style={{ top: u(32), left: u(36), fontSize: u(18), letterSpacing: '0.12em', padding: `${u(8)} ${u(18)}`, background: 'rgba(79,123,255,0.25)', color: '#C7D5FF', border: '1px solid rgba(79,123,255,0.45)', backdropFilter: 'blur(8px)' }}>
+            {tipo === 'grande' ? 'Grande Expediente' : 'Pequeno Expediente'}
+          </span>
+          <div className="absolute left-0 right-0 bottom-0" style={{ padding: `0 ${u(44)} ${u(40)}` }}>
+            {vereador.title && <div className="uppercase" style={{ fontSize: u(20), letterSpacing: '0.1em', color: 'rgba(255,255,255,0.6)' }}>{vereador.title}</div>}
+            <h2 className="font-black" style={{ fontSize: u(72), lineHeight: 1, letterSpacing: '-0.03em' }}>{vereador.name}</h2>
+            {vereador.party && <div className="font-semibold" style={{ fontSize: u(26), marginTop: u(8), color: 'rgba(255,255,255,0.6)' }}>{vereador.party}</div>}
+          </div>
+          {aparte && (
+            <div className="absolute flex items-center rounded-3xl" style={{ left: u(36), right: u(36), bottom: u(36), gap: u(20), padding: u(24), background: 'rgba(0,24,12,0.94)', border: '1px solid #166534' }}>
+              <div className="flex-1">
+                <span className="font-bold uppercase rounded-full" style={{ fontSize: u(15), letterSpacing: '0.12em', padding: `${u(4)} ${u(12)}`, background: 'rgba(34,197,94,0.2)', color: '#4ADE80' }}>Aparte</span>
+                <div className="font-bold" style={{ fontSize: u(34), marginTop: u(8) }}>{aparte.vereador.name}</div>
+              </div>
+              <div className="font-black" style={{ fontSize: u(64), color: '#4ADE80', fontVariantNumeric: 'tabular-nums' }}>{mmss(aparte.tempoRestante)}</div>
+            </div>
+          )}
+        </section>
+        <section className="flex flex-col items-center justify-center relative" style={{ flex: 1, background: '#06080B', borderLeft: `1px solid ${C.border}` }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(${u(700)} ${u(460)} at 50% 45%, ${timerColor}2E, transparent 70%)`, transition: 'background .5s' }} />
+          <div className="relative font-bold uppercase" style={{ fontSize: u(22), letterSpacing: '0.16em', color: paused ? C.amber : C.muted }}>
+            {paused ? 'Pausado · aparte em andamento' : 'Tempo restante'}
+          </div>
+          <div className="relative font-black" style={{ fontSize: u(240), lineHeight: 0.95, letterSpacing: '-0.05em', color: timerColor, fontVariantNumeric: 'tabular-nums', textShadow: `0 0 ${u(80)} ${timerColor}55`, transition: 'color .5s', marginTop: u(16) }}>
+            {mmss(tempoRestante)}
+          </div>
+          <div className="relative font-bold uppercase" style={{ height: u(34), fontSize: u(22), letterSpacing: '0.16em', color: C.red, marginTop: u(14) }}>
+            {urgente ? '● Encerrando' : ''}
+          </div>
+          <div className="relative rounded-full" style={{ width: u(620), height: u(14), background: 'rgba(255,255,255,0.08)', marginTop: u(24) }}>
+            <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: timerColor, transition: 'width .9s linear, background .5s' }} />
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+/* ── Tela de espera (sem sessão em andamento) ───────────────────────────── */
+function Standby({ chamber, now, next, ended }: { chamber: ChamberInfo | null; now: Date; next: SessionInfo | null; ended: boolean }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center text-center relative overflow-hidden"
+         style={{ background: `radial-gradient(${u(1400)} ${u(900)} at 50% 30%, rgba(79,123,255,0.16), transparent 70%), ${C.bg}` }}>
+      <Brasao chamber={chamber} size={220} />
+      <h1 className="font-bold" style={{ fontSize: u(64), letterSpacing: '-0.02em', marginTop: u(28) }}>{chamber?.name ?? ' '}</h1>
+      <div style={{ fontSize: u(26), color: C.muted, marginTop: u(8) }}>
+        {chamber ? `Poder Legislativo Municipal · ${chamber.city}/${chamber.state}` : ' '}
+      </div>
+      <div className="font-black" style={{ fontSize: u(180), lineHeight: 1, letterSpacing: '-0.04em', marginTop: u(56), fontVariantNumeric: 'tabular-nums' }}>
+        {now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+      </div>
+      <div style={{ fontSize: u(30), color: C.muted, marginTop: u(10) }}>
+        {(t => t.charAt(0).toUpperCase() + t.slice(1))(now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}
+      </div>
+      <div className="rounded-full font-semibold" style={{ marginTop: u(56), padding: `${u(14)} ${u(30)}`, fontSize: u(26), background: 'rgba(255,255,255,0.06)', border: `1px solid ${C.border}`, color: C.text }}>
+        {ended ? 'Sessão encerrada' : next
+          ? `Próxima sessão: ${next.number}ª ${TYPE_LABEL[next.type] ?? next.type} · ${new Date(next.date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}`
+          : 'Aguardando o início da sessão'}
+      </div>
+    </div>
+  );
+}
+
+/* ── Peças ──────────────────────────────────────────────────────────────── */
+function Photo({ src, name, initials, size, ring, dim }: { src: string | null; name: string; initials: string | null; size: number; ring?: string; dim?: boolean }) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [src]);
+  const style: React.CSSProperties = {
+    width: u(size), height: u(size), borderRadius: '50%', flexShrink: 0, objectFit: 'cover',
+    border: ring ? `${u(Math.max(3, size * 0.03))} solid ${ring}` : undefined,
+    filter: dim ? 'grayscale(75%) brightness(0.65)' : undefined, transition: 'filter .6s ease, border-color .6s ease',
+  };
+  if (src && !broken) {
+    /* eslint-disable-next-line @next/next/no-img-element */
+    return <img src={src} alt={name} onError={() => setBroken(true)} style={style} />;
+  }
+  return (
+    <div className="flex items-center justify-center font-black" style={{ ...style, background: '#1E2532', color: '#CBD5E1', fontSize: u(size * 0.32) }}>
       {initials || name.slice(0, 2).toUpperCase()}
     </div>
   );
 }
 
-function ConnectionBadge({ connected }: { connected: boolean }) {
-  return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-mono-jet font-semibold"
-         style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-      <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'animate-pulse-dot' : ''}`}
-            style={{ background: connected ? 'oklch(0.50 0.15 155)' : '#5B636D' }} />
-      {connected ? 'AO VIVO' : 'OFFLINE'}
-    </div>
-  );
-}
-
-function StatTop({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-[10px] font-mono-jet tracking-widest" style={{ color: '#5B636D', letterSpacing: '0.1em' }}>{label}</div>
-      <div className="font-tight font-semibold text-2xl mt-0.5" style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>{value}</div>
-    </div>
-  );
-}
-
-function BigCount({ label, count, color }: { label: string; count: number; color: string }) {
-  return (
-    <div className="rounded-2xl p-5 flex items-center gap-4 relative overflow-hidden"
-         style={{ background: '#15191F', border: '1px solid rgba(255,255,255,0.06)' }}>
-      <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(90deg, ${color}08, transparent 50%)` }} />
-      <div className="w-14 h-14 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ background: `${color}18`, color }}>
-        <span className="text-2xl font-bold">{label === 'SIM' ? '✓' : label === 'NÃO' ? '✗' : '—'}</span>
-      </div>
-      <div className="flex-1">
-        <div className="text-sm font-mono-jet font-semibold tracking-wider" style={{ color: '#9AA3AE', letterSpacing: '0.1em' }}>{label}</div>
-      </div>
-      <div className="font-tight font-semibold relative" style={{ fontSize: 72, color, letterSpacing: '-0.04em', lineHeight: 0.9, fontVariantNumeric: 'tabular-nums' }}>
-        {count}
-      </div>
-    </div>
-  );
-}
-
-function Brasao({ size = 40, color = 'currentColor', chamberInfo }: { size?: number; color?: string; chamberInfo?: ChamberInfo | null }) {
-  if (chamberInfo?.logoUrl) {
-    const src = chamberInfo.logoUrl.startsWith('http') ? chamberInfo.logoUrl : `${MEDIA}${chamberInfo.logoUrl}`;
-    return <img src={src} alt={chamberInfo.name} style={{ width: size, height: size, objectFit: 'contain', flexShrink: 0 }} />;
+function Brasao({ chamber, size }: { chamber: ChamberInfo | null; size: number }) {
+  const src = mediaUrl(chamber?.logoUrl);
+  if (src) {
+    /* eslint-disable-next-line @next/next/no-img-element */
+    return <img src={src} alt={chamber!.name} style={{ width: u(size), height: u(size), objectFit: 'contain', flexShrink: 0 }} />;
   }
   return (
-    <svg width={size} height={size} viewBox="0 0 80 80" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="40" cy="40" r="38" stroke={color} strokeWidth="1.5" />
-      <circle cx="40" cy="40" r="32" fill="none" stroke={color} strokeWidth="0.9" strokeDasharray="2 3" opacity="0.5" />
-      <path d="M40 18 L44.5 32 L59 32 L47.2 40.5 L51.8 54.5 L40 46 L28.2 54.5 L32.8 40.5 L21 32 L35.5 32 Z" fill={color} opacity="0.92" />
-      <path d="M14 56 L66 56" stroke={color} strokeWidth="1.2" opacity="0.6" />
+    <svg viewBox="0 0 80 80" fill="none" style={{ width: u(size), height: u(size), flexShrink: 0 }}>
+      <circle cx="40" cy="40" r="38" stroke={C.accent} strokeWidth="1.5" />
+      <path d="M40 18 L44.5 32 L59 32 L47.2 40.5 L51.8 54.5 L40 46 L28.2 54.5 L32.8 40.5 L21 32 L35.5 32 Z" fill={C.accent} opacity="0.92" />
     </svg>
   );
 }
