@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/hooks/useSocket';
 import { useVoting } from '@/hooks/useVoting';
@@ -244,7 +243,7 @@ export default function TelaoPage() {
   }, [connected, sessionId]);
 
   if (!mounted || authLoading) return <div className="w-screen h-screen" style={{ background: C.bg }} />;
-  if (!user || !camaraId) return <Restricted logged={!!user} />;
+  if (!user || !camaraId) return <Restricted />;
 
   const live = !!sessionId && (!sessionInfo || sessionInfo.status === undefined || sessionInfo.status === 'em_andamento');
   const presentCount = vereadores.filter(v => presentes.has(v.id)).length;
@@ -278,19 +277,12 @@ export default function TelaoPage() {
   );
 }
 
-/* ── Sem login: o telão só abre pelo painel ───────────────────────────── */
-function Restricted({ logged }: { logged: boolean }) {
+/* ── Sem login: só o aviso, sem atalho para o painel ─────────────────── */
+function Restricted() {
   return (
     <div className="w-screen h-screen flex flex-col items-center justify-center text-center px-6" style={{ background: C.bg, color: C.text, fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div className="text-2xl font-bold" style={{ letterSpacing: '-0.02em' }}>Telão restrito</div>
-      <p className="mt-2 text-sm max-w-sm" style={{ color: C.muted }}>
-        {logged ? 'Este usuário não pertence a uma Câmara.' : 'Entre no painel neste computador e abra o telão pela página Transmissão.'}
-      </p>
-      {!logged && (
-        <Link href="/login" className="mt-6 px-5 py-2.5 rounded-lg text-sm font-semibold" style={{ background: C.accent, color: '#fff' }}>
-          Entrar no painel
-        </Link>
-      )}
+      <p className="mt-2 text-sm" style={{ color: C.muted }}>Acesso não autorizado.</p>
     </div>
   );
 }
