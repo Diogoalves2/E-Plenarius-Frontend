@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 import { Topbar } from '@/components/layout/Topbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { ChamberProvider } from '@/contexts/ChamberContext';
@@ -19,11 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user, loading, router]);
 
   if (loading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F6F7F9' }}>
-        <div className="text-sm font-mono-jet" style={{ color: '#8A94A2' }}>Carregando…</div>
-      </div>
-    );
+    return <BrandLoader />;
   }
 
   return (

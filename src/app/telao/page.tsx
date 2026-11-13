@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 import { useSocket } from '@/hooks/useSocket';
 import { useVoting } from '@/hooks/useVoting';
 import { useVotingSounds } from '@/hooks/useVotingSounds';
@@ -77,7 +78,7 @@ export default function TelaoPage() {
     return () => clearInterval(id);
   }, [user, refreshUser]);
 
-  if (!mounted || loading) return <div className="w-screen h-screen" style={{ background: C.bg }} />;
+  if (!mounted || loading) return <BrandLoader dark size={96} />;
   if (!user?.chamberId) return <Restricted />;
   return <TelaoScreen key={user.id} />;
 }

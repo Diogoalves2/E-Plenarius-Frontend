@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { Building2, Settings, LogOut, LayoutDashboard } from 'lucide-react';
 
@@ -39,11 +40,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   }, []);
 
   if (loading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#F6F7F9' }}>
-        <div className="text-sm font-mono-jet" style={{ color: '#8A94A2' }}>Carregando…</div>
-      </div>
-    );
+    return <BrandLoader />;
   }
 
   function isActive(item: typeof NAV[0]) {
