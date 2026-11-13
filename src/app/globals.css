@@ -91,3 +91,13 @@ aside::-webkit-scrollbar-thumb:hover,
   90%       { transform: translateX(2px); }
 }
 .animate-shake { animation: shake 0.5s ease; }
+
+/* Login escuro: o preenchimento automático do navegador não pinta o campo de claro */
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #15191F inset;
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  transition: background-color 9999s ease-out 0s;
+}

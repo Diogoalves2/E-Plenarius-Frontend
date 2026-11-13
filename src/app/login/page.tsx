@@ -23,9 +23,9 @@ function resolveErrorMessage(err: any): { title: string; detail: string } {
 }
 
 const fieldCls =
-  'w-full h-11 rounded-lg text-sm outline-none transition-[border-color,box-shadow] ' +
-  'bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 ' +
-  'hover:border-slate-300 focus:border-[#1447E6] focus:ring-4 focus:ring-[#1447E6]/10';
+  'login-input w-full h-11 rounded-lg text-sm outline-none transition-[border-color,box-shadow] ' +
+  'bg-[#15191F] border border-white/[0.08] text-white placeholder:text-[#5B636D] ' +
+  'hover:border-white/[0.16] focus:border-[#1447E6] focus:ring-4 focus:ring-[#1447E6]/20';
 
 export default function LoginPage() {
   const { login, finishLogin } = useAuth();
@@ -92,25 +92,26 @@ export default function LoginPage() {
               </div>}
         </div>
 
-        <div className="bg-white rounded-2xl p-8"
-             style={{ border: '1px solid rgba(15,23,42,0.07)', boxShadow: '0 24px 48px -12px rgba(0,0,0,0.5)' }}>
+        <div className="rounded-2xl p-8"
+             style={{ background: 'rgba(17,20,26,0.92)', border: '1px solid rgba(255,255,255,0.07)',
+                      boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 48px -12px rgba(0,0,0,0.6)' }}>
           {mfa ? (
             mfa.setup
               ? <MfaSetupStep mfaToken={mfa.token} onDone={finishLogin} onBack={() => setMfa(null)} />
               : <MfaVerifyStep mfaToken={mfa.token} onDone={finishLogin} onBack={() => setMfa(null)} />
           ) : (<>
-            <h1 className="font-tight font-semibold text-[22px]" style={{ color: '#0B1220', letterSpacing: '-0.02em' }}>
+            <h1 className="font-tight font-semibold text-[22px] text-center text-white" style={{ letterSpacing: '-0.02em' }}>
               Entrar no painel
             </h1>
-            <p className="text-sm mt-1 mb-7" style={{ color: '#64748B' }}>
+            <p className="text-sm text-center mt-1.5 mb-7" style={{ color: '#8A94A2' }}>
               Use seu usuário ou e-mail cadastrado na Câmara.
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="identifier" className="text-[13px] font-medium" style={{ color: '#334155' }}>Usuário ou e-mail</label>
+                <label htmlFor="identifier" className="text-[13px] font-medium" style={{ color: '#C9CED6' }}>Usuário ou e-mail</label>
                 <div className="relative">
-                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#94A3B8' }} />
+                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#5B636D' }} />
                   <input
                     id="identifier"
                     type="text"
@@ -128,9 +129,9 @@ export default function LoginPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="password" className="text-[13px] font-medium" style={{ color: '#334155' }}>Senha</label>
+                <label htmlFor="password" className="text-[13px] font-medium" style={{ color: '#C9CED6' }}>Senha</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#94A3B8' }} />
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#5B636D' }} />
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
@@ -143,8 +144,8 @@ export default function LoginPage() {
                   />
                   <button type="button" onClick={() => setShowPassword(v => !v)}
                           aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                          className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-md transition-colors hover:bg-slate-100"
-                          style={{ color: '#94A3B8' }}>
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-md transition-colors hover:bg-white/5"
+                          style={{ color: '#5B636D' }}>
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -152,11 +153,11 @@ export default function LoginPage() {
 
               {error && (
                 <div key={shakeKey} role="alert" className="flex gap-2.5 px-3.5 py-3 rounded-lg animate-shake"
-                     style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
-                  <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#DC2626' }} />
+                     style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                  <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#f87171' }} />
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: '#B91C1C' }}>{error.title}</p>
-                    <p className="text-xs mt-0.5 leading-relaxed" style={{ color: '#991B1B' }}>{error.detail}</p>
+                    <p className="text-sm font-semibold" style={{ color: '#f87171' }}>{error.title}</p>
+                    <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'rgba(248,113,113,0.8)' }}>{error.detail}</p>
                   </div>
                 </div>
               )}
@@ -164,7 +165,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="group mt-2 w-full h-11 rounded-lg font-semibold text-sm text-white flex items-center justify-center gap-2 transition-colors bg-[#1447E6] hover:bg-[#103CC4] disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1447E6]/25">
+                className="group mt-2 w-full h-11 rounded-lg font-semibold text-sm text-white flex items-center justify-center gap-2 transition-colors bg-[#1447E6] hover:bg-[#103CC4] disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1447E6]/40">
                 {loading
                   ? <><Loader2 size={15} className="animate-spin" /> Entrando…</>
                   : <>Entrar <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" /></>}
