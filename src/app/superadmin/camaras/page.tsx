@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { Plus, Building2, MapPin, X, Copy, Check, Loader2, Eye, EyeOff, ImagePlus, Trash2, KeyRound, Pencil, Users } from 'lucide-react';
+import { Plus, Building2, MapPin, X, Copy, Check, Loader2, Eye, EyeOff, ImagePlus, Trash2, KeyRound, Pencil, Users, Search, ShieldCheck, ShieldAlert, CalendarRange, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
@@ -36,22 +36,47 @@ export default function CamarasPage() {
   return <Suspense><CamarasPageInner /></Suspense>;
 }
 
+interface Leader { name: string; role: 'presidente' | 'vice_presidente'; mfa: boolean }
+interface ChamberStats {
+  id: string; members: number; tablets: number; tabletsPending: number; sessionsDone: number;
+  itemsVoted: number; lastSessionAt: string | null; leaders: Leader[]; live: boolean;
+}
+type Filter = 'todas' | 'ativas' | 'ao_vivo' | 'inativas';
+
+function ago(iso: string | null) {
+  if (!iso) return 'nenhuma ainda';
+  const m = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (m < 60) return `há ${Math.max(1, m)} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h} h`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `há ${d} dia${d > 1 ? 's' : ''}`;
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 function CamarasPageInner() {
   const dialog = useDialog();
   const [chambers, setChambers] = useState<Chamber[]>([]);
+  const [stats, setStats] = useState<Record<string, ChamberStats>>({});
   const [loadingChambers, setLoadingChambers] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState<Chamber | null>(null);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<Filter>('todas');
 
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const fetchChambers = useCallback(async () => {
     try {
-      const { data } = await api.get('/chambers');
+      const [{ data }, ov] = await Promise.all([
+        api.get('/chambers'),
+        api.get('/chambers/admin/overview').catch(() => null),
+      ]);
       setChambers(data);
+      if (ov?.data?.chambers) setStats(Object.fromEntries(ov.data.chambers.map((c: ChamberStats) => [c.id, c])));
     } finally {
       setLoadingChambers(false);
     }
@@ -83,110 +108,78 @@ function CamarasPageInner() {
     }
   }
 
+  const counts: Record<Filter, number> = {
+    todas: chambers.length,
+    ativas: chambers.filter(c => c.isActive).length,
+    ao_vivo: chambers.filter(c => stats[c.id]?.live).length,
+    inativas: chambers.filter(c => !c.isActive).length,
+  };
+  const q = query.trim().toLowerCase();
+  const visible = chambers.filter(c =>
+    (filter === 'todas' || (filter === 'ativas' && c.isActive) || (filter === 'inativas' && !c.isActive) || (filter === 'ao_vivo' && stats[c.id]?.live)) &&
+    (!q || `${c.name} ${c.city} ${c.state} ${c.slug}`.toLowerCase().includes(q)),
+  );
+  const FILTERS: [Filter, string][] = [['todas', 'Todas'], ['ativas', 'Ativas'], ['ao_vivo', 'Ao vivo'], ['inativas', 'Inativas']];
+
   return (
-    <div style={{ background: '#F5F6F8', minHeight: '100%', padding: '32px 36px 64px' }}>
-      <div className="flex items-center justify-between mb-8">
+    <div className="min-h-full px-6 py-8 lg:px-9" style={{ background: '#F5F6F8' }}>
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0D1117', letterSpacing: '-0.03em', margin: 0, fontFamily: '"Inter Tight","Inter",sans-serif' }}>
-            Câmaras Municipais
-          </h2>
-          <p style={{ fontSize: 13, color: '#8A94A2', marginTop: 3, letterSpacing: '-0.01em' }}>
-            {chambers.length} câmara{chambers.length !== 1 ? 's' : ''} cadastrada{chambers.length !== 1 ? 's' : ''}
+          <h2 className="font-tight font-bold text-[22px]" style={{ color: '#0B1220', letterSpacing: '-0.03em' }}>Câmaras municipais</h2>
+          <p className="text-[13px] mt-1" style={{ color: '#94A3B8' }}>
+            {counts.todas} cadastrada{counts.todas !== 1 ? 's' : ''} · {counts.ativas} ativa{counts.ativas !== 1 ? 's' : ''}
+            {counts.ao_vivo > 0 && <> · <span style={{ color: '#059669' }}>{counts.ao_vivo} ao vivo</span></>}
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 font-semibold text-sm text-white transition-opacity hover:opacity-90"
-          style={{ background: '#1447E6', borderRadius: 8 }}>
-          <Plus size={16} />
-          Nova Câmara
+        <button onClick={() => setShowModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-semibold text-white transition-colors bg-[#1447E6] hover:bg-[#103CC4]">
+          <Plus size={14} strokeWidth={2.5} /> Nova câmara
         </button>
       </div>
 
+      {/* Busca + filtros */}
+      {chambers.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#94A3B8' }} />
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar por nome, cidade ou código"
+                   className="w-full h-9 pl-9 pr-3 rounded-lg text-[13px] outline-none bg-white border border-slate-200 transition-colors hover:border-slate-300 focus:border-[#1447E6]" />
+          </div>
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-white border border-slate-200">
+            {FILTERS.map(([k, label]) => (
+              <button key={k} onClick={() => setFilter(k)}
+                      className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-[12px] font-semibold transition-colors"
+                      style={filter === k ? { background: '#0B1220', color: '#fff' } : { color: '#64748B' }}>
+                {label}
+                <span className="text-[10px] font-bold px-1 rounded"
+                      style={{ background: filter === k ? 'rgba(255,255,255,0.18)' : '#F1F5F9', color: filter === k ? '#fff' : '#94A3B8' }}>
+                  {counts[k]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loadingChambers ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={20} className="animate-spin" style={{ color: '#8A94A2' }} />
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+          {[0, 1, 2].map(i => <div key={i} className="h-[300px] rounded-xl animate-pulse bg-white" style={{ border: '1px solid rgba(15,23,42,0.06)' }} />)}
         </div>
       ) : chambers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Building2 size={40} style={{ color: '#D1D5DB' }} />
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl" style={{ border: '1px solid rgba(15,23,42,0.08)' }}>
+          <span className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'rgba(20,71,230,0.07)' }}>
+            <Building2 size={22} style={{ color: BLUE }} />
+          </span>
           <p className="mt-4 font-semibold" style={{ color: '#0B1220' }}>Nenhuma câmara cadastrada</p>
-          <p className="text-sm mt-1" style={{ color: '#8A94A2' }}>Clique em "Nova Câmara" para começar.</p>
+          <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Clique em &quot;Nova câmara&quot; para começar.</p>
         </div>
+      ) : visible.length === 0 ? (
+        <p className="text-sm py-16 text-center" style={{ color: '#94A3B8' }}>Nenhuma câmara encontrada com esses filtros.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {chambers.map((c) => (
-            <div key={c.id} className="bg-white p-5"
-                 style={{ border: '1px solid #E4E7ED', borderRadius: 10 }}>
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex items-center justify-center flex-shrink-0 overflow-hidden"
-                     style={{ width: 48, height: 48, borderRadius: 8, background: '#F0F4FF', border: '1px solid #DBEAFE' }}>
-                  {c.logoUrl
-                    ? <img src={`${API_BASE}${c.logoUrl}`} alt={c.name} className="w-full h-full object-contain p-1" />
-                    : <Building2 size={20} style={{ color: '#1447E6' }} />}
-                </div>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  fontSize: 11, fontWeight: 600,
-                  padding: '3px 9px', borderRadius: 6,
-                  background: c.isActive ? '#ECFDF5' : '#F5F6F8',
-                  color: c.isActive ? '#059669' : '#8A94A2',
-                  border: `1px solid ${c.isActive ? '#A7F3D0' : '#E4E7ED'}`,
-                }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.isActive ? '#059669' : '#CBD5E1', flexShrink: 0 }} />
-                  {c.isActive ? 'Ativa' : 'Inativa'}
-                </span>
-              </div>
-              <h3 className="font-semibold text-sm leading-snug mb-1" style={{ color: '#0D1117', letterSpacing: '-0.01em' }}>{c.name}</h3>
-              <div className="flex items-center gap-1 text-xs" style={{ color: '#8A94A2' }}>
-                <MapPin size={11} />
-                {c.city} — {c.state}
-              </div>
-              <div className="mt-3 pt-3 flex flex-col gap-2" style={{ borderTop: '1px solid #F0F2F5' }}>
-                <div className="flex items-center justify-between gap-2" style={{
-                  background: '#F5F6F8', border: '1px solid #E4E7ED', borderRadius: 6, padding: '6px 10px',
-                }}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-mono-jet text-[9px] font-bold flex-shrink-0" style={{ color: '#8A94A2', letterSpacing: '0.12em' }}>CÓDIGO</span>
-                    <span className="font-mono-jet text-xs truncate" style={{ color: '#0D1117' }}>{c.slug}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigator.clipboard.writeText(c.slug); }}
-                    className="p-1 rounded transition-colors flex-shrink-0"
-                    style={{ color: '#8A94A2' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(20,71,230,0.08)'; e.currentTarget.style.color = '#1447E6'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#8A94A2'; }}
-                    title="Copiar código">
-                    <Copy size={12} />
-                  </button>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Link href={`/superadmin/camaras/${c.id}/vereadores`}
-                        className="flex items-center justify-center gap-1.5 text-xs font-semibold rounded-lg transition-colors"
-                        style={{ flex: 1, padding: '7px 0', color: '#8A94A2', background: '#F5F6F8' }}
-                        onMouseEnter={(e: any) => { e.currentTarget.style.background = 'rgba(20,71,230,0.08)'; e.currentTarget.style.color = '#1447E6'; }}
-                        onMouseLeave={(e: any) => { e.currentTarget.style.background = '#F5F6F8'; e.currentTarget.style.color = '#8A94A2'; }}>
-                    <Users size={13} /> Vereadores
-                  </Link>
-                  <button onClick={() => setEditTarget(c)}
-                          className="flex items-center justify-center gap-1.5 text-xs font-semibold rounded-lg transition-colors"
-                          style={{ flex: '0 0 auto', padding: '7px 12px', color: '#8A94A2', background: '#F5F6F8' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(20,71,230,0.08)'; e.currentTarget.style.color = '#1447E6'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#F5F6F8'; e.currentTarget.style.color = '#8A94A2'; }}>
-                    <Pencil size={13} /> Editar
-                  </button>
-                  <button onClick={() => resetCredentials(c)} disabled={resetting === c.id}
-                          className="flex items-center justify-center gap-1.5 text-xs font-semibold rounded-lg transition-colors"
-                          style={{ flex: 1.4, padding: '7px 0', color: '#8A94A2', background: '#F5F6F8', whiteSpace: 'nowrap' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(234,179,8,0.08)'; e.currentTarget.style.color = '#b45309'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#F5F6F8'; e.currentTarget.style.color = '#8A94A2'; }}>
-                    {resetting === c.id ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
-                    {resetting === c.id ? 'Resetando…' : 'Resetar Senha'}
-                  </button>
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+          {visible.map(c => (
+            <ChamberCard key={c.id} c={c} s={stats[c.id]} onEdit={() => setEditTarget(c)}
+                         onReset={() => resetCredentials(c)} resetting={resetting === c.id} />
           ))}
         </div>
       )}
@@ -195,6 +188,116 @@ function CamarasPageInner() {
       {editTarget && <EditChamberModal chamber={editTarget} onClose={() => setEditTarget(null)} onSaved={() => { setEditTarget(null); fetchChambers(); }} />}
       {credentials && <CredentialsModal credentials={credentials} onClose={() => setCredentials(null)} />}
     </div>
+  );
+}
+
+function ChamberCard({ c, s, onEdit, onReset, resetting }: {
+  c: Chamber; s?: ChamberStats; onEdit: () => void; onReset: () => void; resetting: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const pres = s?.leaders.find(l => l.role === 'presidente');
+  const status = !c.isActive ? { t: 'Inativa', c: '#94A3B8', bg: '#F1F5F9' }
+    : s?.live ? { t: 'Ao vivo', c: '#059669', bg: '#ECFDF5' }
+    : { t: 'Ativa', c: BLUE, bg: 'rgba(20,71,230,0.07)' };
+  const bienio = c.bienioInicio && c.bienioFim
+    ? `Biênio ${c.bienioInicio}–${c.bienioFim}${c.anoBienio ? ` · ${c.anoBienio}º ano` : ''}`
+    : 'Biênio não configurado';
+  const numbers: [string, number | undefined][] = [
+    ['Vereadores', s?.members], ['Tablets', s?.tablets], ['Sessões', s?.sessionsDone], ['Votadas', s?.itemsVoted],
+  ];
+
+  function copy() {
+    navigator.clipboard.writeText(c.slug);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  }
+
+  return (
+    <article className="bg-white rounded-xl flex flex-col transition-colors border border-slate-200/80 hover:border-slate-300"
+             style={{ opacity: c.isActive ? 1 : 0.85 }}>
+      {/* Identidade */}
+      <div className="flex items-start gap-3.5 p-5 pb-4">
+        <span className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0"
+              style={{ background: '#F8FAFC', border: '1px solid rgba(15,23,42,0.08)' }}>
+          {c.logoUrl
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={`${API_BASE}${c.logoUrl}`} alt="" className="w-full h-full object-contain p-1" />
+            : <Building2 size={20} style={{ color: BLUE }} />}
+        </span>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-tight font-semibold text-[15px] leading-snug" style={{ color: '#0B1220', letterSpacing: '-0.01em' }}>{c.name}</h3>
+          <p className="text-[12px] flex items-center gap-1 mt-0.5" style={{ color: '#94A3B8' }}><MapPin size={11} /> {c.city}, {c.state}</p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md flex-shrink-0"
+              style={{ background: status.bg, color: status.c }}>
+          <span className={`w-1.5 h-1.5 rounded-full ${s?.live && c.isActive ? 'animate-pulse' : ''}`} style={{ background: status.c }} />
+          {status.t}
+        </span>
+      </div>
+
+      {/* Presidência */}
+      <div className="mx-5 flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] min-w-0" style={{ background: '#F8FAFC' }}>
+        <span className="flex-shrink-0" style={{ color: '#94A3B8' }}>Presidente</span>
+        {pres ? (
+          <>
+            <span className="font-semibold truncate" style={{ color: '#0B1220' }}>{pres.name}</span>
+            <span className="ml-auto flex-shrink-0 inline-flex items-center gap-1 font-semibold"
+                  title={pres.mfa ? 'Verificação em duas etapas ativa' : 'Verificação em duas etapas pendente'}
+                  style={{ color: pres.mfa ? '#059669' : '#D97706' }}>
+              {pres.mfa ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />} {pres.mfa ? '2FA' : '2FA pendente'}
+            </span>
+          </>
+        ) : <span className="font-semibold" style={{ color: s ? '#D97706' : '#94A3B8' }}>{s ? 'não definido' : '—'}</span>}
+      </div>
+
+      {/* Números */}
+      <div className="grid grid-cols-4 mx-5 mt-3 rounded-lg" style={{ border: '1px solid rgba(15,23,42,0.06)' }}>
+        {numbers.map(([label, v], i) => (
+          <div key={label} className="px-2 py-2.5 text-center" style={{ borderLeft: i ? '1px solid rgba(15,23,42,0.06)' : undefined }}>
+            <p className="font-tight font-bold text-[17px] leading-none tabular-nums" style={{ color: '#0B1220' }}>
+              {v ?? '—'}
+              {label === 'Tablets' && !!s?.tabletsPending && (
+                <span className="ml-1 text-[10px] font-semibold align-top" style={{ color: '#B45309' }} title="Aguardando aprovação">+{s.tabletsPending}</span>
+              )}
+            </p>
+            <p className="text-[10px] mt-1 uppercase font-semibold" style={{ color: '#94A3B8', letterSpacing: '0.05em' }}>{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Meta */}
+      <div className="flex items-center justify-between gap-3 mx-5 mt-3 text-[11px]" style={{ color: '#94A3B8' }}>
+        <span className="flex items-center gap-1 truncate"><CalendarRange size={12} /> {bienio}</span>
+        <span className="flex-shrink-0">{!s ? '' : s.lastSessionAt ? `Última sessão ${ago(s.lastSessionAt)}` : 'Nenhuma sessão ainda'}</span>
+      </div>
+
+      {/* Código do app */}
+      <button type="button" onClick={copy} title="Copiar código"
+              className="group mx-5 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors hover:bg-slate-50"
+              style={{ border: '1px dashed rgba(15,23,42,0.14)' }}>
+        <span className="text-[10px] font-bold uppercase flex-shrink-0" style={{ color: '#94A3B8', letterSpacing: '0.08em' }}>Código do app</span>
+        <span className="font-mono-jet text-[12px] truncate flex-1" style={{ color: '#0B1220' }}>{c.slug}</span>
+        <span className="flex-shrink-0 flex items-center gap-1 text-[11px] font-semibold" style={{ color: copied ? '#059669' : '#94A3B8' }}>
+          {copied ? <><Check size={12} /> Copiado</> : <Copy size={12} className="group-hover:text-[#1447E6]" />}
+        </span>
+      </button>
+
+      {/* Ações */}
+      <div className="flex items-center gap-2 p-5 pt-4 mt-auto">
+        <Link href={`/superadmin/camaras/${c.id}/vereadores`}
+              className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-lg text-[13px] font-semibold transition-colors bg-[#1447E6]/[0.07] text-[#1447E6] hover:bg-[#1447E6]/[0.12]">
+          <Users size={14} /> Vereadores <ChevronRight size={14} />
+        </Link>
+        <button onClick={onEdit}
+                className="flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold transition-colors border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300">
+          <Pencil size={13} /> Editar
+        </button>
+        <button onClick={onReset} disabled={resetting} title="Redefinir senha do presidente" aria-label="Redefinir senha do presidente"
+                className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors border border-slate-200 text-slate-500 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700 disabled:opacity-60">
+          {resetting ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+        </button>
+      </div>
+    </article>
   );
 }
 
