@@ -303,7 +303,7 @@ function Num({ children }: { children: React.ReactNode }) {
 }
 
 function Status({ active, live }: { active: boolean; live: boolean }) {
-  const s = !active ? { t: 'Inativa', c: SOFT, bg: '#F1F5F9' } : live ? { t: 'Ao vivo', c: '#059669', bg: '#ECFDF5' } : { t: 'Ativa', c: BLUE, bg: 'rgba(20,71,230,0.07)' };
+  const s = !active ? { t: 'Suspensa', c: '#DC2626', bg: '#FEF2F2' } : live ? { t: 'Ao vivo', c: '#059669', bg: '#ECFDF5' } : { t: 'Ativa', c: BLUE, bg: 'rgba(20,71,230,0.07)' };
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-1 rounded-md" style={{ background: s.bg, color: s.c }}>
       <span className={`w-1.5 h-1.5 rounded-full ${live && active ? 'animate-pulse' : ''}`} style={{ background: s.c }} />

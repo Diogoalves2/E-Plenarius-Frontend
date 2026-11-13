@@ -87,6 +87,11 @@ api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const original = error.config as any;
+    // Câmara suspensa: guarda o motivo para a tela de login explicar por que saiu
+    const why = (error.response?.data as any)?.message;
+    if (error.response?.status === 401 && typeof why === 'string' && /suspens/i.test(why)) {
+      try { sessionStorage.setItem('ep_auth_notice', why); } catch { /* sem armazenamento */ }
+    }
     if (error.response?.status === 401 && original && !original._retry) {
       original._retry = true;
       try {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { Plus, Building2, MapPin, X, Copy, Check, Loader2, Eye, EyeOff, ImagePlus, Trash2, KeyRound, Pencil, Users, Search, ShieldCheck, ShieldAlert, CalendarRange, ChevronRight } from 'lucide-react';
+import { Plus, Building2, MapPin, X, Copy, Check, Loader2, Eye, EyeOff, ImagePlus, Trash2, KeyRound, Pencil, Users, Search, ShieldCheck, ShieldAlert, CalendarRange, ChevronRight, Ban, Power } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
@@ -41,6 +41,7 @@ interface Leader { name: string; role: 'presidente' | 'vice_presidente'; mfa: bo
 interface ChamberStats {
   id: string; members: number; tablets: number; tabletsPending: number; sessionsDone: number;
   itemsVoted: number; lastSessionAt: string | null; leaders: Leader[]; live: boolean;
+  lastSuspension: { at: string; reason: string | null } | null;
 }
 type Filter = 'todas' | 'ativas' | 'ao_vivo' | 'inativas';
 
@@ -98,6 +99,46 @@ function CamarasPageInner() {
     fetchChambers();
   }
 
+  const [switching, setSwitching] = useState<string | null>(null);
+
+  async function suspend(chamber: Chamber) {
+    const reason = await dialog.prompt({
+      title: `Suspender ${chamber.name}?`,
+      message: (
+        <ul className="list-disc pl-4 space-y-0.5">
+          <li>Ninguém da Câmara consegue entrar (painel, telão e tablets).</li>
+          <li>Quem estiver conectado é desconectado na hora.</li>
+          <li>O portal público sai do ar.</li>
+          <li>Nenhum dado é apagado: ao reativar, tudo volta como estava.</li>
+        </ul>
+      ),
+      label: 'Motivo (opcional, fica na auditoria)',
+      placeholder: 'Ex.: falta de pagamento',
+      maxLength: 200,
+      tone: 'danger',
+      confirmLabel: 'Suspender câmara',
+    });
+    if (reason === null) return;
+    setSwitching(chamber.id);
+    try {
+      await api.patch(`/chambers/${chamber.id}/status`, { active: false, ...(reason.trim() ? { reason: reason.trim() } : {}) });
+      await fetchChambers();
+    } catch (err: any) {
+      await dialog.alert({ title: 'Não foi possível suspender', message: err?.response?.data?.message ?? 'Tente novamente.', tone: 'danger' });
+    } finally { setSwitching(null); }
+  }
+
+  async function reactivate(chamber: Chamber) {
+    if (!(await dialog.confirm({ title: `Reativar ${chamber.name}?`, message: 'Os usuários da Câmara voltam a entrar normalmente e o portal público volta ao ar.', confirmLabel: 'Reativar câmara' }))) return;
+    setSwitching(chamber.id);
+    try {
+      await api.patch(`/chambers/${chamber.id}/status`, { active: true });
+      await fetchChambers();
+    } catch (err: any) {
+      await dialog.alert({ title: 'Não foi possível reativar', message: err?.response?.data?.message ?? 'Tente novamente.', tone: 'danger' });
+    } finally { setSwitching(null); }
+  }
+
   async function resetCredentials(chamber: Chamber) {
     if (!(await dialog.confirm({ title: 'Redefinir a senha do presidente?', message: <>Câmara <b>{chamber.name}</b>. A senha atual deixa de funcionar e uma nova será exibida.</>, tone: 'danger', confirmLabel: 'Redefinir senha' }))) return;
     setResetting(chamber.id);
@@ -120,7 +161,7 @@ function CamarasPageInner() {
     (filter === 'todas' || (filter === 'ativas' && c.isActive) || (filter === 'inativas' && !c.isActive) || (filter === 'ao_vivo' && stats[c.id]?.live)) &&
     (!q || `${c.name} ${c.city} ${c.state} ${c.slug}`.toLowerCase().includes(q)),
   );
-  const FILTERS: [Filter, string][] = [['todas', 'Todas'], ['ativas', 'Ativas'], ['ao_vivo', 'Ao vivo'], ['inativas', 'Inativas']];
+  const FILTERS: [Filter, string][] = [['todas', 'Todas'], ['ativas', 'Ativas'], ['ao_vivo', 'Ao vivo'], ['inativas', 'Suspensas']];
 
   return (
     <div className="min-h-full px-6 py-8 lg:px-9" style={{ background: '#F5F6F8' }}>
@@ -149,7 +190,7 @@ function CamarasPageInner() {
           <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filtrar câmaras">
             {FILTERS.map(([k, label]) => {
               const on = filter === k;
-              const dot = k === 'ativas' ? BLUE : k === 'ao_vivo' ? '#10B981' : k === 'inativas' ? '#94A3B8' : null;
+              const dot = k === 'ativas' ? BLUE : k === 'ao_vivo' ? '#10B981' : k === 'inativas' ? '#DC2626' : null;
               return (
                 <button key={k} role="tab" aria-selected={on} onClick={() => setFilter(k)}
                         className={`flex items-center gap-2 h-9 px-3.5 rounded-full text-[13px] font-medium transition-colors border ${
@@ -183,7 +224,8 @@ function CamarasPageInner() {
         <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
           {visible.map(c => (
             <ChamberCard key={c.id} c={c} s={stats[c.id]} onEdit={() => setEditTarget(c)}
-                         onReset={() => resetCredentials(c)} resetting={resetting === c.id} />
+                         onReset={() => resetCredentials(c)} resetting={resetting === c.id}
+                         onSuspend={() => suspend(c)} onReactivate={() => reactivate(c)} switching={switching === c.id} />
           ))}
         </div>
       )}
@@ -195,14 +237,16 @@ function CamarasPageInner() {
   );
 }
 
-function ChamberCard({ c, s, onEdit, onReset, resetting }: {
+function ChamberCard({ c, s, onEdit, onReset, resetting, onSuspend, onReactivate, switching }: {
   c: Chamber; s?: ChamberStats; onEdit: () => void; onReset: () => void; resetting: boolean;
+  onSuspend: () => void; onReactivate: () => void; switching: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const pres = s?.leaders.find(l => l.role === 'presidente');
-  const status = !c.isActive ? { t: 'Inativa', c: '#94A3B8', bg: '#F1F5F9' }
+  const status = !c.isActive ? { t: 'Suspensa', c: '#DC2626', bg: '#FEF2F2' }
     : s?.live ? { t: 'Ao vivo', c: '#059669', bg: '#ECFDF5' }
     : { t: 'Ativa', c: BLUE, bg: 'rgba(20,71,230,0.07)' };
+  const susp = !c.isActive ? s?.lastSuspension : null;
   const bienio = c.bienioInicio && c.bienioFim
     ? `Biênio ${c.bienioInicio}–${c.bienioFim}${c.anoBienio ? ` · ${c.anoBienio}º ano` : ''}`
     : 'Biênio não configurado';
@@ -217,8 +261,21 @@ function ChamberCard({ c, s, onEdit, onReset, resetting }: {
   }
 
   return (
-    <article className="bg-white rounded-xl flex flex-col transition-colors border border-slate-200/80 hover:border-slate-300"
-             style={{ opacity: c.isActive ? 1 : 0.85 }}>
+    <article className="bg-white rounded-xl flex flex-col transition-colors border border-slate-200/80 hover:border-slate-300">
+      {!c.isActive && (
+        <div className="flex items-center gap-3 px-5 py-3 rounded-t-xl" style={{ background: '#FEF2F2', borderBottom: '1px solid #FECACA' }}>
+          <Ban size={15} className="flex-shrink-0" style={{ color: '#DC2626' }} />
+          <div className="flex-1 min-w-0 text-[12px] leading-snug" style={{ color: '#991B1B' }}>
+            <b>Câmara suspensa</b>{susp?.at ? ` desde ${new Date(susp.at).toLocaleDateString('pt-BR')}` : ''}
+            {susp?.reason && <span className="block truncate" style={{ color: '#B91C1C' }}>{susp.reason}</span>}
+          </div>
+          <button onClick={onReactivate} disabled={switching}
+                  className="flex-shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold text-white transition-colors bg-[#059669] hover:bg-[#047857] disabled:opacity-60">
+            {switching ? <Loader2 size={13} className="animate-spin" /> : <Power size={13} />} Reativar
+          </button>
+        </div>
+      )}
+      <div className="flex flex-col flex-1" style={{ opacity: c.isActive ? 1 : 0.6 }}>
       {/* Identidade */}
       <div className="flex items-start gap-3.5 p-5 pb-4">
         <span className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0"
@@ -300,6 +357,13 @@ function ChamberCard({ c, s, onEdit, onReset, resetting }: {
                 className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors border border-slate-200 text-slate-500 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700 disabled:opacity-60">
           {resetting ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
         </button>
+        {c.isActive && (
+          <button onClick={onSuspend} disabled={switching} title="Suspender câmara" aria-label="Suspender câmara"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors border border-slate-200 text-slate-500 hover:bg-red-50 hover:border-red-200 hover:text-red-600 disabled:opacity-60">
+            {switching ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
+          </button>
+        )}
+      </div>
       </div>
     </article>
   );

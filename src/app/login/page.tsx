@@ -15,6 +15,8 @@ function resolveErrorMessage(err: any): { title: string; detail: string } {
   if (!err?.response) return { title: 'Sem conexão', detail: 'Não foi possível conectar ao servidor. Verifique sua internet.' };
   if (status === 401 || msg.toLowerCase().includes('credenciais') || msg.toLowerCase().includes('inválid'))
     return { title: 'Credenciais inválidas', detail: 'Usuário/e-mail ou senha incorretos.' };
+  if (msg.toLowerCase().includes('suspens'))
+    return { title: 'Câmara suspensa', detail: msg };
   if (status === 403 || msg.toLowerCase().includes('desativad'))
     return { title: 'Conta desativada', detail: 'Esta conta está desativada. Contate o administrador.' };
   if (status === 429)
@@ -38,6 +40,14 @@ export default function LoginPage() {
   const [systemLogo, setSystemLogo] = useState<string | null>(null);
   // Senha ok, falta o segundo fator (superadmin/presidente)
   const [mfa, setMfa] = useState<{ token: string; setup: boolean } | null>(null);
+
+  // Saiu porque a câmara foi suspensa: explica na tela de login
+  useEffect(() => {
+    try {
+      const notice = sessionStorage.getItem('ep_auth_notice');
+      if (notice) { setError({ title: 'Câmara suspensa', detail: notice }); sessionStorage.removeItem('ep_auth_notice'); }
+    } catch { /* sem armazenamento */ }
+  }, []);
 
   useEffect(() => {
     try {
