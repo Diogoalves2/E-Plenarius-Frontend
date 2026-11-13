@@ -9,6 +9,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { MEMBER_ROLES } from '@/lib/auth';
 import { useDialog } from '@/components/ui/Dialog';
 
+import { Select } from '@/components/ui/Select';
 type PresenceStatus = 'presente' | 'ausente' | 'sem_sessao' | 'inativo' | 'na';
 
 const PRESENCE_UI: Record<PresenceStatus, { label: string; dot: string; color: string }> = {
@@ -45,6 +46,16 @@ const CARGOS = [
   { title: 'Vereador',         role: 'vereador'   },
   { title: 'Servidor(a) administrativo(a)', role: 'secretaria' },
 ] as const;
+
+const CARGO_HINT: Record<string, string> = {
+  'Presidente': 'conduz a sessão e abre as votações',
+  'Vice-presidente': 'substitui o presidente',
+  '1º Secretário(a)': 'Mesa Diretora · vota',
+  '2º Secretário(a)': 'Mesa Diretora · vota',
+  'Vereador': 'vota pelo tablet',
+  'Servidor(a) administrativo(a)': 'opera o painel · não vota',
+};
+const CARGO_OPTIONS = CARGOS.map(c => ({ value: c.title as string, label: c.title as string, hint: CARGO_HINT[c.title] }));
 
 function displayTitle(v: Vereador) {
   return v.title ?? (v.role === 'presidente' ? 'Presidente' : v.role === 'vice_presidente' ? 'Vice-presidente' : v.role === 'secretaria' ? 'Servidor(a) administrativo(a)' : 'Vereador');
@@ -512,10 +523,7 @@ function NewVereadorModal({ chamberId, onClose, onCreated }: { chamberId: string
           </div>
         </Field>
         <Field label="CARGO" required>
-          <select value={form.cargo} onChange={e => set('cargo', e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
-            {CARGOS.map(c => <option key={c.title} value={c.title}>{c.title}</option>)}
-          </select>
+          <Select ariaLabel="Cargo" value={form.cargo} onChange={v => set('cargo', v)} options={CARGO_OPTIONS} />
         </Field>
         <Field label="PARTIDO">
           <Input value={form.party} onChange={e => set('party', e.target.value)} placeholder="PSB" />
@@ -641,10 +649,7 @@ function EditVereadorModal({ vereador, onClose, onSaved }: { vereador: Vereador;
           <p className="text-xs mt-1" style={{ color: '#8A94A2' }}>Deixe em branco para manter o atual.</p>
         </Field>
         <Field label="CARGO" required>
-          <select value={form.cargo} onChange={e => set('cargo', e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
-            {CARGOS.map(c => <option key={c.title} value={c.title}>{c.title}</option>)}
-          </select>
+          <Select ariaLabel="Cargo" value={form.cargo} onChange={v => set('cargo', v)} options={CARGO_OPTIONS} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="PARTIDO">

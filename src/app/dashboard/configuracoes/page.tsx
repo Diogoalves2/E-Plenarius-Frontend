@@ -12,6 +12,7 @@ import {
 import { useDialog } from '@/components/ui/Dialog';
 
 
+import { Select } from '@/components/ui/Select';
 const ipv4 = (ip: string) => {
   const p = ip.split('.').map(Number);
   return p.length === 4 && p.every(n => Number.isInteger(n) && n >= 0 && n <= 255)
@@ -152,10 +153,11 @@ export default function ConfiguracoesPage() {
           {TIPOS_PROJETO.map(t => (
             <div key={t} className="flex items-center justify-between gap-3 py-2">
               <span className="text-sm" style={{ color: '#0B1220' }}>{t}</span>
-              <select value={byType[t] ?? 'simples'} onChange={e => setByType(b => ({ ...b, [t]: e.target.value as Majority }))}
-                      style={iStyle} className="px-2.5 py-1.5 rounded-lg text-sm outline-none" title={MAJORITY_HELP[byType[t] ?? 'simples']}>
-                {(Object.keys(MAJORITY_LABEL) as Majority[]).map(m => <option key={m} value={m}>{MAJORITY_LABEL[m]}</option>)}
-              </select>
+              <div className="w-[230px] flex-shrink-0">
+                <Select size="sm" ariaLabel={`Maioria para ${t}`} value={(byType[t] ?? 'simples') as Majority}
+                        onChange={v => setByType(b => ({ ...b, [t]: v }))} title={MAJORITY_HELP[byType[t] ?? 'simples']}
+                        options={(Object.keys(MAJORITY_LABEL) as Majority[]).map(m => ({ value: m, label: MAJORITY_LABEL[m] }))} />
+              </div>
             </div>
           ))}
         </div>

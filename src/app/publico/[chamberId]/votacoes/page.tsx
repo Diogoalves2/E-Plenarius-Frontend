@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Download, Search, ChevronRight, Vote, FileSpreadsheet, CheckCircle2, XCircle, ListChecks } from 'lucide-react';
 import { PublicShell, publicGet, PUBLIC_API, PUBLIC_MEDIA, STATUS_PUB, ROLE_PUB, T, dataPub } from '@/components/public/PublicShell';
+import { Select } from '@/components/ui/Select';
 import {
   useTip, StatTile, Legend, ChartCard, DataTable, StackedBar, MonthlyColumns, fillMonths, monthLabel, Avatar,
 } from '@/components/public/charts';
@@ -170,18 +171,15 @@ export default function VotacoesPublicoPage() {
                 <input value={q} onChange={e => setQ(e.target.value)} placeholder="Número, ementa ou autor"
                        className="flex-1 py-2 text-sm outline-none bg-transparent min-w-0" aria-label="Buscar votação" />
               </div>
-              <select value={result} onChange={e => setResult(e.target.value)} aria-label="Resultado"
-                      className="text-sm rounded-lg px-2.5 py-2 bg-white" style={{ border: `1px solid ${T.hair}`, color: T.ink2 }}>
-                <option value="">Todos os resultados</option>
-                <option value="aprovado">Aprovadas</option>
-                <option value="rejeitado">Rejeitadas</option>
-              </select>
+              <div className="w-[190px]">
+                <Select size="sm" ariaLabel="Resultado" value={result} onChange={setResult}
+                        options={[{ value: '', label: 'Todos os resultados' }, { value: 'aprovado', label: 'Aprovadas' }, { value: 'rejeitado', label: 'Rejeitadas' }]} />
+              </div>
               {tipos.length > 1 && (
-                <select value={tipo} onChange={e => setTipo(e.target.value)} aria-label="Tipo de matéria"
-                        className="text-sm rounded-lg px-2.5 py-2 bg-white" style={{ border: `1px solid ${T.hair}`, color: T.ink2 }}>
-                  <option value="">Todos os tipos</option>
-                  {tipos.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <div className="w-[210px]">
+                  <Select size="sm" ariaLabel="Tipo de matéria" value={tipo} onChange={setTipo}
+                          options={[{ value: '', label: 'Todos os tipos' }, ...tipos.map(t => ({ value: t, label: t }))]} />
+                </div>
               )}
             </div>
 

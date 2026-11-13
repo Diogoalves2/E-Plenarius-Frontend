@@ -8,6 +8,7 @@ import { fullSessionTitle, ChamberBienio } from '@/lib/sessionTitle';
 import { canConductSession } from '@/lib/auth';
 import { useDialog } from '@/components/ui/Dialog';
 
+import { Select } from '@/components/ui/Select';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 
@@ -216,13 +217,13 @@ function NewSessionModal({ chamberId, chamber, onClose, onCreated }: { chamberId
             <Input type="number" min="1" value={form.number} onChange={e => setForm(f => ({ ...f, number: e.target.value }))} placeholder="47" required />
           </Field>
           <Field label="TIPO" required>
-            <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
-              <option value="ordinaria">Ordinária</option>
-              <option value="extraordinaria">Extraordinária</option>
-              <option value="solene">Solene</option>
-              <option value="especial">Especial</option>
-            </select>
+            <Select ariaLabel="Tipo da sessão" value={form.type} onChange={v => setForm(f => ({ ...f, type: v }))}
+                    options={[
+                      { value: 'ordinaria', label: 'Ordinária' },
+                      { value: 'extraordinaria', label: 'Extraordinária' },
+                      { value: 'solene', label: 'Solene' },
+                      { value: 'especial', label: 'Especial' },
+                    ]} />
           </Field>
         </div>
         <Field label="DATA E HORA DA SESSÃO" required>

@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { useDialog } from '@/components/ui/Dialog';
 
+import { Select } from '@/components/ui/Select';
 interface Chamber {
   id: string;
   name: string;
@@ -629,13 +630,8 @@ function EditChamberModal({ chamber, onClose, onSaved }: { chamber: Chamber; onC
               </Field>
             </div>
             <Field label="ANO DO BIÊNIO">
-              <select value={legForm.anoBienio} onChange={e => setLeg('anoBienio', e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
-                      style={{ background: 'white', border: '1px solid rgba(15,23,42,0.12)', color: legForm.anoBienio ? '#0B1220' : '#8A94A2' }}>
-                <option value="">Não configurado</option>
-                <option value="1">1º Ano do Biênio</option>
-                <option value="2">2º Ano do Biênio</option>
-              </select>
+              <Select ariaLabel="Ano do biênio" value={legForm.anoBienio} onChange={v => setLeg('anoBienio', v)}
+                      options={[{ value: '', label: 'Não configurado' }, { value: '1', label: '1º Ano do Biênio' }, { value: '2', label: '2º Ano do Biênio' }]} />
             </Field>
           </div>
 

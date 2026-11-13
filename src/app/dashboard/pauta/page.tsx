@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import { TIPOS_PROJETO, MAJORITY_LABEL, MAJORITY_HELP, requiredVotes, useChamberRules, type Majority } from '@/lib/legislativo';
 import { MEMBER_ROLES } from '@/lib/auth';
 
+import { Select } from '@/components/ui/Select';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
 
 
@@ -246,10 +247,9 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
     <Modal title="Novo Item de Pauta" onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="TIPO DE MATÉRIA" required>
-          <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value, majority: autoMajority(e.target.value) }))}
-                  className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
-            {TIPOS_PROJETO.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <Select ariaLabel="Tipo de matéria" value={form.type}
+                  onChange={v => setForm(f => ({ ...f, type: v, majority: autoMajority(v) }))}
+                  options={TIPOS_PROJETO.map(t => ({ value: t, label: t }))} />
         </Field>
         <Field label="NÚMERO" required>
           <Input value={form.number} onChange={e => set('number', e.target.value)} placeholder="PL 001/2026" required />
@@ -309,21 +309,16 @@ function NewItemModal({ sessionId, chamberId, orderIndex, onClose, onCreated }: 
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="TIPO DE VOTAÇÃO" required>
-            <select value={form.votingType} onChange={e => set('votingType', e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
-              <option value="aberta">Aberta</option>
-              <option value="secreta">Secreta</option>
-            </select>
+            <Select ariaLabel="Tipo de votação" value={form.votingType} onChange={v => set('votingType', v)}
+                    options={[{ value: 'aberta', label: 'Aberta', hint: 'voto de cada vereador é público' }, { value: 'secreta', label: 'Secreta', hint: 'só o resultado é divulgado' }]} />
           </Field>
           <Field label="QUÓRUM MÍNIMO (PRESENTES)" required>
             <Input type="number" min="1" value={form.quorumMinimum} onChange={e => set('quorumMinimum', e.target.value)} required />
           </Field>
         </div>
         <Field label="MAIORIA PARA APROVAR" required>
-          <select value={form.majority || 'simples'} onChange={e => set('majority', e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none" style={iStyle}>
-            {(Object.keys(MAJORITY_LABEL) as Majority[]).map(m => <option key={m} value={m}>{MAJORITY_LABEL[m]}</option>)}
-          </select>
+          <Select ariaLabel="Quórum de aprovação" value={form.majority || 'simples'} onChange={v => set('majority', v)}
+                  options={(Object.keys(MAJORITY_LABEL) as Majority[]).map(m => ({ value: m, label: MAJORITY_LABEL[m] }))} />
           <p className="text-xs mt-1.5" style={{ color: '#8A94A2' }}>
             {MAJORITY_HELP[(form.majority || 'simples') as Majority]}
             {rules && requiredVotes((form.majority || 'simples') as Majority, rules.seats) != null &&

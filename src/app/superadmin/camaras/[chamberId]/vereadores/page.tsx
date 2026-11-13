@@ -9,6 +9,7 @@ import {
 import api from '@/lib/api';
 import { useDialog } from '@/components/ui/Dialog';
 
+import { Select } from '@/components/ui/Select';
 interface Vereador {
   id: string; name: string; email: string; role: string;
   title: string | null; party: string | null; initials: string;
@@ -24,6 +25,22 @@ const ROLES = [
   { value: 'presidente', label: 'Presidente' },
   { value: 'vice_presidente', label: 'Vice-presidente' },
 ];
+
+// Mesmo padrão do painel do presidente: cargo = título exibido; 1º/2º secretários são vereadores (votam).
+const CARGOS = [
+  { title: 'Presidente', role: 'presidente', hint: 'conduz a sessão e abre as votações' },
+  { title: 'Vice-presidente', role: 'vice_presidente', hint: 'substitui o presidente' },
+  { title: '1º Secretário(a)', role: 'vereador', hint: 'Mesa Diretora · vota' },
+  { title: '2º Secretário(a)', role: 'vereador', hint: 'Mesa Diretora · vota' },
+  { title: 'Vereador', role: 'vereador', hint: 'vota pelo tablet' },
+  { title: 'Servidor(a) administrativo(a)', role: 'secretaria', hint: 'opera o painel · não vota' },
+] as const;
+const CARGO_OPTIONS = CARGOS.map(c => ({ value: c.title as string, label: c.title as string, hint: c.hint as string }));
+
+function cargoOf(role: string, title: string | null | undefined): string {
+  if (title && CARGOS.some(c => c.title === title)) return title;
+  return CARGOS.find(c => c.role === role)?.title ?? 'Vereador';
+}
 
 export default function VereadoresPage() {
   const dialog = useDialog();
@@ -201,8 +218,7 @@ function VereadorModal({
   const [form, setForm] = useState({
     name: vereador?.name ?? '',
     email: vereador?.email ?? '',
-    role: vereador?.role ?? 'vereador',
-    title: vereador?.title ?? '',
+    cargo: cargoOf(vereador?.role ?? 'vereador', vereador?.title),
     party: vereador?.party ?? '',
     password: '',
   });
@@ -233,7 +249,8 @@ function VereadorModal({
         avatarUrl = up.url;
       }
       if (isEdit) {
-        const patch: any = { name: form.name, email: form.email, role: form.role, title: form.title || undefined, party: form.party || undefined };
+        const cargo = CARGOS.find(c => c.title === form.cargo) ?? CARGOS[4];
+        const patch: any = { name: form.name, email: form.email, role: cargo.role, title: cargo.title, party: form.party || undefined };
         if (avatarUrl) patch.avatarUrl = avatarUrl;
         await api.patch(`/users/${vereador!.id}`, patch);
       } else {
@@ -241,8 +258,8 @@ function VereadorModal({
           chamberId,
           name: form.name,
           email: form.email,
-          role: form.role,
-          title: form.title || undefined,
+          role: (CARGOS.find(c => c.title === form.cargo) ?? CARGOS[4]).role,
+          title: form.cargo,
           party: form.party || undefined,
           password: form.password,
         };
@@ -310,21 +327,14 @@ function VereadorModal({
           <Field label="E-MAIL" required>
             <Input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@camara.leg.br" required />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="FUNÇÃO" required>
-              <select value={form.role} onChange={e => set('role', e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-lg text-sm outline-none"
-                      style={{ background: 'white', border: '1px solid rgba(15,23,42,0.12)', color: '#0B1220' }}>
-                {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
+          <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+            <Field label="CARGO" required>
+              <Select ariaLabel="Cargo" value={form.cargo} onChange={v => set('cargo', v)} options={CARGO_OPTIONS} />
             </Field>
             <Field label="PARTIDO">
               <Input value={form.party} onChange={e => set('party', e.target.value.toUpperCase())} placeholder="MDB, PT…" />
             </Field>
           </div>
-          <Field label="TÍTULO" hint="(opcional)">
-            <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Ex: Vereador, Dr., Cel." />
-          </Field>
           {!isEdit && (
             <Field label="SENHA" required>
               <div className="relative">
