@@ -145,18 +145,21 @@ function CamarasPageInner() {
             <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar por nome, cidade ou código"
                    className="w-full h-9 pl-9 pr-3 rounded-lg text-[13px] outline-none bg-white border border-slate-200 transition-colors hover:border-slate-300 focus:border-[#1447E6]" />
           </div>
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-white border border-slate-200">
-            {FILTERS.map(([k, label]) => (
-              <button key={k} onClick={() => setFilter(k)}
-                      className="flex items-center gap-1.5 px-2.5 h-7 rounded-md text-[12px] font-semibold transition-colors"
-                      style={filter === k ? { background: '#0B1220', color: '#fff' } : { color: '#64748B' }}>
-                {label}
-                <span className="text-[10px] font-bold px-1 rounded"
-                      style={{ background: filter === k ? 'rgba(255,255,255,0.18)' : '#F1F5F9', color: filter === k ? '#fff' : '#94A3B8' }}>
-                  {counts[k]}
-                </span>
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filtrar câmaras">
+            {FILTERS.map(([k, label]) => {
+              const on = filter === k;
+              const dot = k === 'ativas' ? BLUE : k === 'ao_vivo' ? '#10B981' : k === 'inativas' ? '#94A3B8' : null;
+              return (
+                <button key={k} role="tab" aria-selected={on} onClick={() => setFilter(k)}
+                        className={`flex items-center gap-2 h-9 px-3.5 rounded-full text-[13px] font-medium transition-colors border ${
+                          on ? 'bg-[#1447E6]/[0.08] border-[#1447E6]/40 text-[#1447E6]'
+                             : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'}`}>
+                  {dot && <span className={`w-1.5 h-1.5 rounded-full ${k === 'ao_vivo' && counts[k] ? 'animate-pulse' : ''}`} style={{ background: dot }} />}
+                  {label}
+                  <span className={`tabular-nums text-[12px] ${on ? 'text-[#1447E6]/70' : 'text-slate-400'}`}>{counts[k]}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
