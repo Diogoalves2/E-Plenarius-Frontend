@@ -78,23 +78,22 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10"
          style={{
-           background: 'radial-gradient(900px 480px at 50% -10%, rgba(20,71,230,0.08), transparent 70%), #F7F8FA',
+           background: 'radial-gradient(900px 480px at 50% -10%, rgba(20,71,230,0.16), transparent 70%), #0B0D10',
          }}>
       <div className="w-full max-w-[400px]">
         {/* Marca */}
         <div className="flex justify-center mb-8">
           {systemLogo
-            // Logo do sistema é feito para fundo escuro: inverte claro/escuro mantendo o azul
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={systemLogo} alt="E-Plenarius" style={{ height: 30, maxWidth: 240, objectFit: 'contain', filter: 'invert(1) hue-rotate(180deg) brightness(0.72) saturate(1.8)' }} />
+            ? <img src={systemLogo} alt="E-Plenarius" style={{ height: 30, maxWidth: 240, objectFit: 'contain' }} />
             : <div className="flex items-center gap-2.5">
                 <Brasao size={32} color="#1447E6" />
-                <span className="font-tight font-semibold text-lg tracking-tight" style={{ color: '#0B1220' }}>E-Plenarius</span>
+                <span className="font-tight font-semibold text-lg tracking-tight text-white">E-Plenarius</span>
               </div>}
         </div>
 
         <div className="bg-white rounded-2xl p-8"
-             style={{ border: '1px solid rgba(15,23,42,0.07)', boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 12px 32px -8px rgba(15,23,42,0.10)' }}>
+             style={{ border: '1px solid rgba(15,23,42,0.07)', boxShadow: '0 24px 48px -12px rgba(0,0,0,0.5)' }}>
           {mfa ? (
             mfa.setup
               ? <MfaSetupStep mfaToken={mfa.token} onDone={finishLogin} onBack={() => setMfa(null)} />
@@ -174,7 +173,7 @@ export default function LoginPage() {
           </>)}
         </div>
 
-        <p className="text-center text-xs mt-6" style={{ color: '#94A3B8' }}>
+        <p className="text-center text-xs mt-6" style={{ color: '#5B636D' }}>
           Acesso restrito a membros da Câmara.
         </p>
       </div>
