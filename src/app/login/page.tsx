@@ -23,9 +23,9 @@ function resolveErrorMessage(err: any): { title: string; detail: string } {
 }
 
 const fieldCls =
-  'login-input w-full h-11 rounded-lg text-sm outline-none transition-[border-color,box-shadow] ' +
+  'login-input w-full h-11 rounded-lg text-sm outline-none transition-colors ' +
   'bg-[#15191F] border border-white/[0.08] text-white placeholder:text-[#5B636D] ' +
-  'hover:border-white/[0.16] focus:border-[#1447E6] focus:ring-4 focus:ring-[#1447E6]/20';
+  'hover:border-white/[0.16] focus:border-[#1447E6]/80 focus:bg-[#171B22]';
 
 export default function LoginPage() {
   const { login, finishLogin } = useAuth();
@@ -93,8 +93,7 @@ export default function LoginPage() {
         </div>
 
         <div className="rounded-2xl p-8"
-             style={{ background: 'rgba(17,20,26,0.92)', border: '1px solid rgba(255,255,255,0.07)',
-                      boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 48px -12px rgba(0,0,0,0.6)' }}>
+             style={{ background: 'rgba(17,20,26,0.92)', border: '1px solid rgba(255,255,255,0.07)' }}>
           {mfa ? (
             mfa.setup
               ? <MfaSetupStep mfaToken={mfa.token} onDone={finishLogin} onBack={() => setMfa(null)} />
