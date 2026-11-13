@@ -15,11 +15,11 @@ const NAV = [
   { label: 'Configurações',  href: '/superadmin/configuracoes', icon: Settings,       exact: false },
 ];
 
-const SIDEBAR_BG   = 'radial-gradient(120% 90% at 40% 30%, rgb(26, 26, 26) 0%, rgb(13, 13, 13) 50%, rgb(0, 0, 0) 100%)';
-const SIDEBAR_TEXT = 'rgba(255,255,255,0.65)';
-const ACTIVE_BG    = 'rgba(99,160,255,0.18)';
+const SIDEBAR_BG   = 'linear-gradient(180deg, #08090C 0%, #050608 100%)';
+const SIDEBAR_TEXT = 'rgba(255,255,255,0.6)';
+const ACTIVE_BG    = 'rgba(79,123,255,0.16)';
 const ACTIVE_TEXT  = '#FFFFFF';
-const HOVER_BG     = 'rgba(255,255,255,0.06)';
+const HOVER_BG     = 'rgba(255,255,255,0.05)';
 
 export default function SuperadminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
@@ -33,8 +33,15 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   }, [user, loading, router]);
 
   useEffect(() => {
-    const update = () => setSystemLogo(localStorage.getItem(SYSTEM_LOGO_KEY));
+    const update = () => { try { setSystemLogo(localStorage.getItem(SYSTEM_LOGO_KEY)); } catch { /* sem armazenamento */ } };
     update();
+    // Fonte da verdade é o servidor (navegador novo não tem a cópia local)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+    fetch(`${API_URL}/upload/system-logo`).then(r => r.json()).then(({ url }) => {
+      const full = url ? `${API_URL.replace(/\/api\/?$/, '')}${url}` : null;
+      try { full ? localStorage.setItem(SYSTEM_LOGO_KEY, full) : localStorage.removeItem(SYSTEM_LOGO_KEY); } catch { /* sem armazenamento */ }
+      setSystemLogo(full);
+    }).catch(() => {});
     window.addEventListener('system-logo-changed', update);
     return () => window.removeEventListener('system-logo-changed', update);
   }, []);
@@ -50,7 +57,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#F6F7F9' }}>
       {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 flex flex-col h-full" style={{ background: SIDEBAR_BG }}>
+      <aside className="w-56 flex-shrink-0 flex flex-col h-full" style={{ background: SIDEBAR_BG, borderRight: '1px solid rgba(255,255,255,0.06)' }}>
         {/* Logo */}
         <div className="flex-shrink-0 flex flex-col gap-1"
              style={{ padding: '10px 12px 8px', borderBottom: 'rgba(255,255,255,0.08) 1px solid' }}>
