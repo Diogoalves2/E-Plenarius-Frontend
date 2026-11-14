@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Loader2, AlertTriangle, User, Lock, ArrowRight } from 'lucide-react';
 import { MfaSetupStep, MfaVerifyStep } from '@/components/auth/MfaSteps';
+import { BrandLoader } from '@/components/ui/BrandLoader';
 
 const SYSTEM_LOGO_KEY = 'system_logo_url';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:3001';
@@ -30,7 +31,11 @@ const fieldCls =
   'hover:border-white/[0.16] focus:border-[#1447E6]/80 focus:bg-[#171B22]';
 
 export default function LoginPage() {
-  const { login, finishLogin } = useAuth();
+  const { login, finishLogin, loading: authLoading } = useAuth();
+  // Carregamento com a marca antes do formulário: enquanto confere o login salvo
+  // e, no mínimo, o tempo de uma volta da animação (não pisca em conexão rápida).
+  const [minDone, setMinDone] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMinDone(true), 1100); return () => clearTimeout(t); }, []);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -85,43 +90,14 @@ export default function LoginPage() {
     }
   }, [login, identifier, password]);
 
+  if (authLoading || !minDone) return <BrandLoader dark size={88} />;
+
   return (
-    <div className="relative overflow-hidden min-h-screen flex flex-col items-center justify-center px-4 py-10"
+    <div className="login-in relative overflow-hidden min-h-screen flex flex-col items-center justify-center px-4 py-10"
          style={{
            background: 'radial-gradient(900px 480px at 50% -10%, rgba(20,71,230,0.16), transparent 70%), #0B0D10',
          }}>
-      {/* Marca d'água: o "E" com o check do ícone, inteiro, em contorno, desenhado ao abrir */}
-      <div aria-hidden="true" className="login-mark pointer-events-none select-none absolute hidden lg:block"
-           style={{ left: '7vw', top: '50%', height: '46vh', aspectRatio: '39 / 38', transform: 'translateY(-50%) rotate(-6deg)' }}>
-        <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(20,71,230,0.14), transparent 75%)', transform: 'scale(1.35)' }} />
-        <svg viewBox="33 31 39 38" className="relative w-full h-full" style={{ overflow: 'visible' }}>
-          <defs>
-            <linearGradient id="login-e-stroke" x1="0" y1="0" x2="0.4" y2="1">
-              <stop offset="0" stopColor="#8FB0FF" stopOpacity="0.55" />
-              <stop offset="1" stopColor="#4F7BFF" stopOpacity="0.14" />
-            </linearGradient>
-            <filter id="login-e-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="0.6" />
-            </filter>
-          </defs>
-          {/* brilho difuso por baixo do traço */}
-          <path className="login-mark-e" d="M35.5 34 H64.5 L61.6 40.4 H43.1 V46.9 H55.2 L52.4 53.1 H43.1 V59.6 H64.5 L61.6 66 H35.5 Z"
-                pathLength={1} fill="none" stroke="#4F7BFF" strokeOpacity="0.35" strokeWidth="0.5" filter="url(#login-e-glow)" />
-          <path className="login-mark-e" d="M35.5 34 H64.5 L61.6 40.4 H43.1 V46.9 H55.2 L52.4 53.1 H43.1 V59.6 H64.5 L61.6 66 H35.5 Z"
-                pathLength={1} fill="none" stroke="url(#login-e-stroke)" strokeWidth="0.2" strokeLinejoin="round" />
-          <path className="login-mark-check" d="M53.5 54.2 L58.2 58.8 L68.6 45.6"
-                pathLength={1} fill="none" stroke="#E7B24A" strokeOpacity="0.55" strokeWidth="0.55" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <style>{`
-          .login-mark-e { stroke-dasharray: 1; stroke-dashoffset: 0; animation: login-draw 2.2s cubic-bezier(.65,0,.35,1) .2s both; }
-          .login-mark-check { stroke-dasharray: 1; stroke-dashoffset: 0; animation: login-draw .7s cubic-bezier(.65,0,.35,1) 2.1s both; }
-          .login-mark { animation: login-fade 1.2s ease-out both; }
-          @keyframes login-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-          @keyframes login-fade { from { opacity: 0; } to { opacity: 1; } }
-          @media (prefers-reduced-motion: reduce) { .login-mark, .login-mark-e, .login-mark-check { animation: none; } }
-        `}</style>
-      </div>
-
+      <style>{`.login-in{animation:login-in .45s ease-out both}@keyframes login-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion: reduce){.login-in{animation:none}}`}</style>
       <div className="relative w-full max-w-[400px]">
         {/* Marca */}
         <div className="flex justify-center mb-8">
