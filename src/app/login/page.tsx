@@ -86,11 +86,26 @@ export default function LoginPage() {
   }, [login, identifier, password]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10"
+    <div className="relative overflow-hidden min-h-screen flex flex-col items-center justify-center px-4 py-10"
          style={{
            background: 'radial-gradient(900px 480px at 50% -10%, rgba(20,71,230,0.16), transparent 70%), #0B0D10',
          }}>
-      <div className="w-full max-w-[400px]">
+      {/* Marca d'água: o "E" do ícone, só contorno, grande e inclinado, saindo pela lateral */}
+      <svg aria-hidden="true" viewBox="33 31 34 38" preserveAspectRatio="xMidYMid meet"
+           className="pointer-events-none absolute select-none hidden lg:block"
+           style={{ right: '-11vw', bottom: '-12vh', height: '84vh', width: 'auto', transform: 'rotate(-8deg)', transformOrigin: 'center' }}>
+        <defs>
+          <linearGradient id="login-e-stroke" x1="0" y1="0" x2="0.35" y2="1">
+            <stop offset="0" stopColor="#6E95FF" stopOpacity="0.32" />
+            <stop offset="0.6" stopColor="#4F7BFF" stopOpacity="0.12" />
+            <stop offset="1" stopColor="#4F7BFF" stopOpacity="0.03" />
+          </linearGradient>
+        </defs>
+        <path d="M35.5 34 H64.5 L61.6 40.4 H43.1 V46.9 H55.2 L52.4 53.1 H43.1 V59.6 H64.5 L61.6 66 H35.5 Z"
+              fill="none" stroke="url(#login-e-stroke)" strokeWidth="1.25" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      </svg>
+
+      <div className="relative w-full max-w-[400px]">
         {/* Marca */}
         <div className="flex justify-center mb-8">
           {systemLogo
