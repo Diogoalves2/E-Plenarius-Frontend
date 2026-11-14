@@ -59,6 +59,14 @@ async function callApi(path: string, body: unknown, req: NextRequest, authorizat
   return { status: res.status, data: data as Record<string, any> };
 }
 
+/**
+ * Apaga o cookie de login com os MESMOS atributos com que foi criado (Secure, SameSite,
+ * HttpOnly, Path): sem eles o navegador pode recusar a remoção e manter um token revogado.
+ */
+function clearRt(res: NextResponse) {
+  res.cookies.set(RT_COOKIE, '', { ...cookieBase, maxAge: 0 });
+}
+
 function reply(status: number, data: Record<string, any>) {
   const { refreshToken, trustToken, ...body } = data ?? {};
   const res = NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -87,7 +95,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pat
       if (!rt) return NextResponse.json({ session: null }, { headers: { 'Cache-Control': 'no-store' } });
       const r = await callApi('refresh', { refreshToken: rt }, req);
       const res = reply(r.status, r.data);
-      if (r.status === 401 || r.status === 403) res.cookies.delete({ name: RT_COOKIE, path: cookieBase.path });
+      if (r.status === 401 || r.status === 403) clearRt(res);
       return res;
     }
 
@@ -95,7 +103,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pat
       const auth = req.headers.get('authorization');
       if (auth && rt) await callApi('logout', { refreshToken: rt }, req, auth).catch(() => null);
       const res = NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
-      res.cookies.delete({ name: RT_COOKIE, path: cookieBase.path });
+      clearRt(res); // o "confiar neste computador" (2FA) fica: vale 30 dias mesmo saindo
       return res;
     }
 
