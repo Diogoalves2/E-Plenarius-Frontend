@@ -90,20 +90,37 @@ export default function LoginPage() {
          style={{
            background: 'radial-gradient(900px 480px at 50% -10%, rgba(20,71,230,0.16), transparent 70%), #0B0D10',
          }}>
-      {/* Marca d'água: o "E" do ícone, só contorno, grande e inclinado, saindo pela lateral */}
-      <svg aria-hidden="true" viewBox="33 31 34 38" preserveAspectRatio="xMidYMid meet"
-           className="pointer-events-none absolute select-none hidden lg:block"
-           style={{ right: '-11vw', bottom: '-12vh', height: '84vh', width: 'auto', transform: 'rotate(-8deg)', transformOrigin: 'center' }}>
-        <defs>
-          <linearGradient id="login-e-stroke" x1="0" y1="0" x2="0.35" y2="1">
-            <stop offset="0" stopColor="#6E95FF" stopOpacity="0.32" />
-            <stop offset="0.6" stopColor="#4F7BFF" stopOpacity="0.12" />
-            <stop offset="1" stopColor="#4F7BFF" stopOpacity="0.03" />
-          </linearGradient>
-        </defs>
-        <path d="M35.5 34 H64.5 L61.6 40.4 H43.1 V46.9 H55.2 L52.4 53.1 H43.1 V59.6 H64.5 L61.6 66 H35.5 Z"
-              fill="none" stroke="url(#login-e-stroke)" strokeWidth="1.25" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-      </svg>
+      {/* Marca d'água: o "E" com o check do ícone, inteiro, em contorno, desenhado ao abrir */}
+      <div aria-hidden="true" className="login-mark pointer-events-none select-none absolute hidden lg:block"
+           style={{ left: '7vw', top: '50%', height: '46vh', aspectRatio: '39 / 38', transform: 'translateY(-50%) rotate(-6deg)' }}>
+        <div className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(20,71,230,0.14), transparent 75%)', transform: 'scale(1.35)' }} />
+        <svg viewBox="33 31 39 38" className="relative w-full h-full" style={{ overflow: 'visible' }}>
+          <defs>
+            <linearGradient id="login-e-stroke" x1="0" y1="0" x2="0.4" y2="1">
+              <stop offset="0" stopColor="#8FB0FF" stopOpacity="0.55" />
+              <stop offset="1" stopColor="#4F7BFF" stopOpacity="0.14" />
+            </linearGradient>
+            <filter id="login-e-glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="0.6" />
+            </filter>
+          </defs>
+          {/* brilho difuso por baixo do traço */}
+          <path className="login-mark-e" d="M35.5 34 H64.5 L61.6 40.4 H43.1 V46.9 H55.2 L52.4 53.1 H43.1 V59.6 H64.5 L61.6 66 H35.5 Z"
+                pathLength={1} fill="none" stroke="#4F7BFF" strokeOpacity="0.35" strokeWidth="0.5" filter="url(#login-e-glow)" />
+          <path className="login-mark-e" d="M35.5 34 H64.5 L61.6 40.4 H43.1 V46.9 H55.2 L52.4 53.1 H43.1 V59.6 H64.5 L61.6 66 H35.5 Z"
+                pathLength={1} fill="none" stroke="url(#login-e-stroke)" strokeWidth="0.2" strokeLinejoin="round" />
+          <path className="login-mark-check" d="M53.5 54.2 L58.2 58.8 L68.6 45.6"
+                pathLength={1} fill="none" stroke="#E7B24A" strokeOpacity="0.55" strokeWidth="0.55" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <style>{`
+          .login-mark-e { stroke-dasharray: 1; stroke-dashoffset: 0; animation: login-draw 2.2s cubic-bezier(.65,0,.35,1) .2s both; }
+          .login-mark-check { stroke-dasharray: 1; stroke-dashoffset: 0; animation: login-draw .7s cubic-bezier(.65,0,.35,1) 2.1s both; }
+          .login-mark { animation: login-fade 1.2s ease-out both; }
+          @keyframes login-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+          @keyframes login-fade { from { opacity: 0; } to { opacity: 1; } }
+          @media (prefers-reduced-motion: reduce) { .login-mark, .login-mark-e, .login-mark-check { animation: none; } }
+        `}</style>
+      </div>
 
       <div className="relative w-full max-w-[400px]">
         {/* Marca */}
